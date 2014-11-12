@@ -30,7 +30,7 @@ public class RunLengthMat extends ViewportTool{
 	private static int[][] GLRmatrix,GLRPNmatrix,OGLRmatrix,OGLRPNmatrix;
 	private static int[] GLRNVector,RLRNVector,OGLRNVector,ORLRNVector;
 	private static BufferedImage origimage;
-	private static double Nr = 0,ONr=0;
+	private static double Nr=0,ONr=0;
 	private static int w1,h1;
 	private static int[][] isCheck;
 	private static int _xbegin, _ybegin, xend,yend;
@@ -68,7 +68,7 @@ public class RunLengthMat extends ViewportTool{
 	/**
 	 * @mask = phi
 	 */
-	double[][] mask;
+	private double[][] mask;
 	
 	/*public RunLengthMat(Matrix matrix,Vector VMatrix){
 		super("RunLengthMat", "RunLengthMat of Image", "", "");
@@ -261,7 +261,7 @@ public class RunLengthMat extends ViewportTool{
 		int xdir = 0, ydir = 0;
 		int total = 0;
 		GrayValue = new double[h1][w1];
-		int value, max = 0, maxgray = 0,level = 256;
+		int value, max = 3, maxgray = 0,level = 256; //origin max =0, modify max = 3
 		Raster origRaster = origimage.getData();
 		for (int i = 0; i < w1; i++) {
 			for (int j = 0; j < h1; j++) {
@@ -343,6 +343,14 @@ public class RunLengthMat extends ViewportTool{
 							GLRmatrix[(int) GrayValue[i][j]][length]++;
 						}
 					}
+				// this is used to confirm my guess , need to be delete
+				for(int i=0;i<GLRmatrix.length;i++){
+				for(int e : GLRmatrix[i]){
+					System.out.print(e+" ");
+				}
+				System.out.println();
+				}
+				///////////
 				for (int i = h1-1; i >=0 ; i--)
 					for (int j = 0; j < w1; j++) {
 						if (isCheck[i][j] == 0 && mask[i][j] == 0) {
@@ -398,7 +406,7 @@ public class RunLengthMat extends ViewportTool{
 				ONr += total;
 				total = 0;
 			}
-			for (int i = 0; i < 2; i++) {
+			for (int i = 1; i < 2; i++) {	//modify i = 0
 				if (i == 0)
 					System.out.println("===================angle is "+dir+" Outside==================");
 				else
