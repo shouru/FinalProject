@@ -346,9 +346,9 @@ public class Viewer extends JFrame
 	    }
  	    System.out.println("I am ready in");
  	    System.out.println("xbegin is "+ xbegin+" xend is "+ xend + " ybegin is "+ ybegin + " yend is "+yend+" roitotal is "+roitotal);
- 	    RunLengthMat run = new RunLengthMat(data,origImage,xbegin,ybegin,xend,yend,roitotal);
+ 	    //RunLengthMat run = new RunLengthMat(data,origImage,xbegin,ybegin,xend,yend,roitotal);
  	    //TamuraTextureFeature run3 = new TamuraTextureFeature(data,origImage,xbegin,ybegin,xend,yend,roitotal);
- 	    //Glcm run2 = new Glcm(data,origImage,xbegin,ybegin,xend,yend);
+ 	    Glcm run2 = new Glcm(data,origImage,xbegin,ybegin,xend,yend);
         // Ininitalization 
         for(int i=0;i<_allImages.size();i++){ 
         	ImageReaderAdapter image = (ImageReaderAdapter)_allImages.get(i);
