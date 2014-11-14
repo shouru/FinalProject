@@ -17,6 +17,14 @@ import java.util.Scanner;
 import javax.imageio.ImageIO;
 import javax.swing.SwingUtilities;
 
+import jxl.Workbook;
+import jxl.write.Label;
+import jxl.write.Number;
+import jxl.write.WritableCellFormat;
+import jxl.write.WritableFont;
+import jxl.write.WritableSheet;
+import jxl.write.WritableWorkbook;
+
 import org.medtoolbox.jviewbox.viewport.Viewport;
 import org.medtoolbox.jviewbox.viewport.ViewportGrid;
 import org.medtoolbox.jviewbox.viewport.ViewportCluster;
@@ -34,10 +42,7 @@ public class Glcm extends ViewportTool{
 	private static int ywindowsize = 0;
 	private static int ybegin,xbegin,xend,yend;
 	private static int max;
-	/**
-	 * Computation function.
-	 */
-	//private Matrix _matrix;
+	static double[][] Values = new double[4][6];
 	
 	/**
 	 * image length and height
@@ -245,7 +250,7 @@ public class Glcm extends ViewportTool{
 		/**
 		 * 此處_xBegin _yBegin xend yend 皆由skullstripper中取得，目前skullstripper並無這些函數 可以的話試看看自己修改
 		 */
-		for(int inside =0;inside<2;inside++){
+		for(int inside =1;inside<2;inside++){
 			if(inside == 0){
 				for (int u = 0; u < h1; u++) {
 					for (int v = 0; v < w1; v++) {
@@ -275,17 +280,73 @@ public class Glcm extends ViewportTool{
 				}				
 				System.out.println("=============================== "+angle +" Inside===============================");
 			}
-			System.out.println(angle+" degree："+"Asm value is " + ASM(comatrix, total));
+			/*System.out.println(angle+" degree："+"Asm value is " + ASM(comatrix, total));
 			System.out.println(angle+" degree："+"CON value is " + CON(comatrix, total));
 			System.out.println(angle+" degree："+"ENT value is " + ENT(comatrix, total));
 			System.out.println(angle+" degree："+"HOM value is " + HOM(comatrix, total));
 			System.out.println(angle+" degree："+"DIS value is " + DIS(comatrix, total));
-			System.out.println(angle+" degree："+"COR value is " + COR(comatrix, total));
+			System.out.println(angle+" degree："+"COR value is " + COR(comatrix, total));*/
+			Values[(int) angle/45][0] = ASM(comatrix, total);
+			Values[(int) angle/45][1] = CON(comatrix, total);
+			Values[(int) angle/45][2] = ENT(comatrix, total);
+			Values[(int) angle/45][3] = HOM(comatrix, total);
+			Values[(int) angle/45][4] = DIS(comatrix, total);
+			Values[(int) angle/45][5] = COR(comatrix, total);
+			System.out.println(angle+" degree："+"Asm value is " + Values[(int) angle/45][0]);
+			System.out.println(angle+" degree："+"CON value is " + Values[(int) angle/45][1]);
+			System.out.println(angle+" degree："+"ENT value is " + Values[(int) angle/45][2]);
+			System.out.println(angle+" degree："+"HOM value is " + Values[(int) angle/45][3]);
+			System.out.println(angle+" degree："+"DIS value is " + Values[(int) angle/45][4]);
+			System.out.println(angle+" degree："+"COR value is " + Values[(int) angle/45][5]);
 			total = 0;
 			for (int m = 0; m < comatrix.length; m++) {
 				Arrays.fill(comatrix[m], 0);
 			}
 		}
+	    try{
+	    	WritableWorkbook workbook = Workbook.createWorkbook(new File("C:/Users/matlab/Desktop/GLCM/Image25.xls"));
+	    	//將工作表一取名成 First Sheet
+	    	WritableSheet sheet = workbook.createSheet("Sheet1", 0);
+	    	// first(0) is column second(2) para is row, and (0,2) in excel is (A,3)  
+	    	WritableFont arial14font = new WritableFont(WritableFont.ARIAL, 14); 
+	    	WritableCellFormat arial14format = new WritableCellFormat (arial14font);
+	    	WritableFont arial12font = new WritableFont(WritableFont.ARIAL, 12); 
+	    	WritableCellFormat arial12format = new WritableCellFormat (arial12font);
+	    	Label label = new Label(2,0, "ASM",arial14format);
+	    	sheet.addCell(label); 
+	    	Label label1 = new Label(3,0, "CON",arial14format);
+	    	sheet.addCell(label1); 
+	    	Label label5 = new Label(4,0, "ENT",arial14format);
+	    	sheet.addCell(label5); 
+	    	Label label2 = new Label(5,0, "HOM",arial14format);
+	    	sheet.addCell(label2); 
+	    	Label label3 = new Label(6,0, "DIS",arial14format);
+	    	sheet.addCell(label3); 
+	    	Label label4 = new Label(7,0, "COR",arial14format);
+	    	sheet.addCell(label4); 
+	    	Label label6 = new Label(0,0, "angle",arial14format);
+	    	sheet.addCell(label6); 
+	    	Label label7 = new Label(0,1, "0",arial14format);
+	    	sheet.addCell(label7); 
+	    	Label label8 = new Label(0,2, "45",arial14format);
+	    	sheet.addCell(label8); 
+	    	Label label9 = new Label(0,3, "90",arial14format);
+	    	sheet.addCell(label9); 
+	    	Label label10 = new Label(0,4, "135",arial14format);
+	    	sheet.addCell(label10); 
+	    	Number number = new Number(100, 100, 0,arial12format); 
+	    	for(int i=0;i<4;i++){
+	    		for(int j =0;j<6;j++){
+	    			number.setValue(Values[i][j]);
+	    			sheet.addCell(number.copyTo(j+2,i+1));
+	    		}
+	    	}
+	    	workbook.write(); 
+	    	workbook.close();
+	    }
+	    catch(Exception ex){
+	    	ex.printStackTrace();
+	    }
 		return cpGray;
 	}
 	//old
