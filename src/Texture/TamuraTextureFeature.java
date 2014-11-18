@@ -367,8 +367,20 @@ public class TamuraTextureFeature extends ViewportTool{
 						   		   Vmatrix[2][0]*Filterimg[i+1][j-1] + Vmatrix[2][1]*Filterimg[i+1][j] + Vmatrix[2][2]*Filterimg[i+1][j+1];
     			theta[i-1][j-1] = Math.atan(deltaV[i-1][j-1] / deltaH[i-1][j-1]) + Math.PI/2;
     			deltaG[i-1][j-1] = (Math.abs(deltaH[i-1][j-1]) + Math.abs(deltaV[i-1][j-1])) / 2;
-    			System.out.print("deltaG["+(i-1)+"]["+(j-1)+"] is "+deltaG[i-1][j-1]+" ");
+    			//System.out.print("deltaG["+(i-1)+"]["+(j-1)+"] is "+deltaG[i-1][j-1]+" ");
     		}
+    		//System.out.println();
+    	}
+    	System.out.println("==========deltaV===========");
+    	for(int i = 0; i<deltaV.length;i++){
+    		for(int j = 0; j < deltaV[0].length;j++)
+    			System.out.print(deltaV[i][j]+" ");
+    		System.out.println();
+    	}
+    	System.out.println("==========deltaH===========");
+    	for(int i = 0; i<deltaV.length;i++){
+    		for(int j = 0; j < deltaV[0].length;j++)
+    			System.out.print(deltaH[i][j]+" ");
     		System.out.println();
     	}
     	// second step ; construct the edge probability histogram EdgeProbaHisto and from now on , we need to separate roi into, inside and outside, two group. 
@@ -432,7 +444,6 @@ public class TamuraTextureFeature extends ViewportTool{
     		}
     	}
     	
-    	
     	//make a recursive class for compute the lol minus
     	Fdir = thominus(EdgeProbaHisto,position,d,v_position,maxposi);
 		return Fdir;
@@ -442,18 +453,11 @@ public class TamuraTextureFeature extends ViewportTool{
     	double result = 0;
     	int posi = 1,v_posi=1;
     	if(position[posi] > v_position[v_posi]){
-    		v_posi = 0;
-    		v_position[v_posi] = -1;
-    	}
-    	else{
-    		posi=0;
-    		position[posi] = -1;
-    	}
+    		v_posi = 2;
+    	}        
     	// to test the EdgeProbaHisto[[nowposi+dir] is valley or not
     	for(int i=0;i<d;i++){
-    		if(i >= v_position[v_posi] && v_position[v_posi]!=0){
-    			if(v_posi!=0)
-    				posi++;
+    		if(i >= v_position[v_posi]){
     			v_posi++;
     			posi++;
     		}
