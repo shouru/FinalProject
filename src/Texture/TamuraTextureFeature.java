@@ -10,6 +10,14 @@ import java.util.Vector;
 
 import javax.imageio.ImageIO;
 
+import jxl.Workbook;
+import jxl.write.Label;
+import jxl.write.Number;
+import jxl.write.WritableCellFormat;
+import jxl.write.WritableFont;
+import jxl.write.WritableSheet;
+import jxl.write.WritableWorkbook;
+
 import org.medtoolbox.jviewbox.viewport.Viewport;
 import org.medtoolbox.jviewbox.viewport.ViewportCluster;
 import org.medtoolbox.jviewbox.viewport.ViewportTool;
@@ -18,40 +26,81 @@ import LevelSet.SkullStripper;
 
 public class TamuraTextureFeature extends ViewportTool{
 	public static File img;
-	private static double[][] GrayValue = {{0,1,2,3},{1,1,2,3},{2,2,2,3},{3,3,3,3}};
+	private static double[][] GrayValue;
 	private static BufferedImage origimage;
-	private static int ybegin=0,xbegin=0,xend=3,yend=3; // modify
-	private static int ROItotal = 16;
-	private static int height = 4, width = 4; //need modify
+	private static int ybegin,xbegin,xend,yend;
+	private static int ROItotal;
+	private static int height, width;
 	/**
 	 * Vector matrix
 	 */
 	private Vector _Matrix;
 	
 	/**
+	 * record coarseness contrast direction
+	 */
+	private static double[] Values = new double[3];
+	
+	/**
 	 * @mask = phi
 	 */
-	private static double[][] mask = {{1,1,1,1},{1,1,1,1},{1,1,1,1},{1,1,1,1}};
+	private static double[][] mask;
 	
-	public TamuraTextureFeature(double[][] phi, BufferedImage orig, int _xbegin,int _ybegin,int xen, int yen,int roi){
+	public TamuraTextureFeature(double[][] phi, BufferedImage orig, int _xbegin,int _ybegin,int xen, int yen,int roi,int imagenum){
 		super("TamuraTextureFeature", "TamuraTextureFeature of Image", "", "");
-		/*origimage = orig;
+		origimage = orig;
 		xbegin = _xbegin;
 		xend = xen;
 		ybegin = _ybegin;
 		yend = yen;
 		mask = phi;
-		ROItotal = roi;*/
+		ROItotal = roi;
+		double cor,cont,dir=0;
 		//transform level to 256
-		//getGrayScaleAvg(origimage,256);
-		for(int i = 1;i<2;i++){
-			if(i==0)
+		getGrayScaleAvg(origimage,256);
+		for(int i = 1;i<2;i++){ //about out or in
+			/*if(i==0)
 				System.out.println("===================Outside==================");
 			else
         		System.out.println("===================Inside===================");
-			//System.out.println("Cor is "+Cor(i));
-			//System.out.println("Contrast is "+Contrast(i)); //fixing
-			System.out.println("Dir is "+Dir(16,12,i));
+			System.out.println("Cor is "+Cor(i));
+			System.out.println("Contrast is "+Contrast(i)); */
+			//System.out.println("Dir is "+Dir(16,12,i));
+			cor = Cor(i);
+			cont = Contrast(i);
+			dir = Dir(16,12,i);
+			try{
+		    	WritableWorkbook workbook = null;
+		    	if(i==1)
+		    		workbook = Workbook.createWorkbook(new File("C:/Users/cebleclipse/Desktop/backup/Tamura/pn5_rf20/Inside/Image"+imagenum+".xls"));
+		    	else
+		    		workbook = Workbook.createWorkbook(new File("C:/Users/cebleclipse/Desktop/Tamura/pn3_rf20/Background/Image"+imagenum+".xls"));
+		    	//將工作表一取名成 First Sheet
+		    	WritableSheet sheet = workbook.createSheet("Image"+imagenum, 0);
+		    	// first(0) is column second(2) para is row, and (0,2) in excel is (A,3)  
+		    	WritableFont arial14font = new WritableFont(WritableFont.ARIAL, 14); 
+		    	WritableCellFormat arial14format = new WritableCellFormat (arial14font);
+		    	WritableFont arial12font = new WritableFont(WritableFont.ARIAL, 12); 
+		    	WritableCellFormat arial12format = new WritableCellFormat (arial12font);
+		    	Label label = new Label(2,0, "Coarseness",arial14format);
+		    	sheet.addCell(label); 
+		    	Label label1 = new Label(3,0, "Contrast",arial14format);
+		    	sheet.addCell(label1); 
+		    	Label label5 = new Label(4,0, "Direction",arial14format);
+		    	sheet.addCell(label5); 
+		    	Label label7 = new Label(0,1, "Values",arial14format);
+		    	sheet.addCell(label7); 
+		    	Number number = new Number(100, 100, 0,arial12format); 
+		    	for(int j =0;j<3;j++){
+		    		number.setValue(Values[j]);
+		    		sheet.addCell(number.copyTo(j+2,1));
+		    	}
+		    	workbook.write(); 
+		    	workbook.close();
+			}
+		    catch(Exception ex){
+		    	ex.printStackTrace();
+		    }
 		}
 	}
 	
@@ -160,10 +209,10 @@ public class TamuraTextureFeature extends ViewportTool{
 							}
 						}
 						A[k][m][n] /= total;
-						System.out.print(A[k][m][n]+" ");
+						//System.out.print(A[k][m][n]+" ");
 						total = 0;
 					}
-					System.out.println();
+					//System.out.println();
 				}
 			}
 			// step 2
@@ -195,7 +244,7 @@ public class TamuraTextureFeature extends ViewportTool{
 							maxV = Math.max(Ev, Eh);
 						}
 					}
-					System.out.println("MaxV is "+maxV);
+					//System.out.println("MaxV is "+maxV);
 					cor += BestS;
 					maxV = 0;
 				}
@@ -255,6 +304,7 @@ public class TamuraTextureFeature extends ViewportTool{
 				}
 			}
 		}
+		Values[0] = cor/denominator;
     	return cor/denominator;
     }
     
@@ -334,6 +384,7 @@ public class TamuraTextureFeature extends ViewportTool{
     		Fcos = 0;
     	else
     		Fcos = variance / Math.pow(Alpha4, 0.25);
+    	Values[1] = Fcos;
 		return Fcos;
     }
     
@@ -371,28 +422,19 @@ public class TamuraTextureFeature extends ViewportTool{
     		}
     		//System.out.println();
     	}
-    	System.out.println("==========deltaV===========");
-    	for(int i = 0; i<deltaV.length;i++){
-    		for(int j = 0; j < deltaV[0].length;j++)
-    			System.out.print(deltaV[i][j]+" ");
-    		System.out.println();
-    	}
-    	System.out.println("==========deltaH===========");
-    	for(int i = 0; i<deltaV.length;i++){
-    		for(int j = 0; j < deltaV[0].length;j++)
-    			System.out.print(deltaH[i][j]+" ");
-    		System.out.println();
-    	}
     	// second step ; construct the edge probability histogram EdgeProbaHisto and from now on , we need to separate roi into, inside and outside, two group. 
     	for(int k = 0; k<d;k++){
     		int accmulator = 0;
     		if(inside == 1){
     			for(int i = ybegin; i <= yend;i++)
     				for(int j = xbegin ; j <= xend ; j++){
-    					if(mask[i][j]==inside)
-    						if(theta[i][j]<(2*k+1)*	Math.PI/(2*d) && theta[i][j] >= (2*k-1)*Math.PI/(2*d))
-    							if(deltaG[i][j] >= t)
+    					if(mask[i][j]==inside){
+    						if(theta[i][j]<(2*k+1)*	Math.PI/(2*d) && theta[i][j] >= (2*k-1)*Math.PI/(2*d)){
+    							if(deltaG[i][j] >= t){
     								accmulator++;
+    							}
+    						}
+    					}
     			}
     		}
     		else{
@@ -404,64 +446,39 @@ public class TamuraTextureFeature extends ViewportTool{
     								accmulator++;
     				}
     		}
+    		//System.out.println("accmulator is "+ accmulator);
     		Ntheta[k] = accmulator;
     		sum_N_theta += accmulator;
     	}
     	// compute number of peak and construct EdgeProbaHisto
     	// find the position of peak;
-    	int[] position = new int[d/2+1];
-    	int[] v_position = new int[d/2+1];
     	int maxposi = 0;
-    	int posi = 0,v_posi=0;
+    	double maxvalue = 0;
+    	//System.out.println("sum_N_theta is "+sum_N_theta);
     	for(int k=0;k<d;k++){
-    		EdgeProbaHisto[k] = Ntheta[k]/sum_N_theta;
+    		EdgeProbaHisto[k] = Ntheta[k] / sum_N_theta;
+    		//System.out.println("EdgeProbaHisto["+k+"] is : "+EdgeProbaHisto[k]);
     		if(k==0){
-    			if(EdgeProbaHisto[k] > Ntheta[k+1]/sum_N_theta){
-    				num_peak++;
-    				position[++posi] = k;
-    			}
-    			else if(EdgeProbaHisto[k] < Ntheta[k+1]/sum_N_theta){
-    				v_position[++v_posi] = k;
-    			}
+    			maxvalue = Ntheta[k] / sum_N_theta;
+    			maxposi = k;
     		}
-    		else if(k==d-1){
-    			if(EdgeProbaHisto[k] < Ntheta[k-1]/sum_N_theta){
-    				num_peak++;
-    				position[++posi] = k;
-    			}
-    			else if(EdgeProbaHisto[k] > Ntheta[k-1]/sum_N_theta){
-    				v_position[++v_posi] = k;
-    			}
-    		}
-    		else{
-    			if(EdgeProbaHisto[k] > Ntheta[k+1]/sum_N_theta && EdgeProbaHisto[k] > EdgeProbaHisto[k-1]){
-    				num_peak++;
-    				position[++posi] = k;
-    			}
-    			else if(EdgeProbaHisto[k] < Ntheta[k+1]/sum_N_theta && EdgeProbaHisto[k] < EdgeProbaHisto[k-1]){
-    				v_position[++v_posi] = k;
-    			}
+    		else if((Ntheta[k] / sum_N_theta) > maxvalue){
+    			maxposi = k;	
+    			maxvalue = EdgeProbaHisto[k];
     		}
     	}
-    	
+    	//System.out.println("maxposi is " + maxposi);
+    	//System.out.println("maxvalue is "+ maxvalue);
     	//make a recursive class for compute the lol minus
-    	Fdir = thominus(EdgeProbaHisto,position,d,v_position,maxposi);
+    	Fdir = thominus(EdgeProbaHisto,d,maxposi);
+    	Values[2] = Fdir;
 		return Fdir;
     }
     
-    private static double thominus(double[] EdgeProbaHisto,int[] position,int d,int[] v_position,int maxposi){
+    private static double thominus(double[] EdgeProbaHisto,int d,int maxposi){
     	double result = 0;
-    	int posi = 1,v_posi=1;
-    	if(position[posi] > v_position[v_posi]){
-    		v_posi = 2;
-    	}        
-    	// to test the EdgeProbaHisto[[nowposi+dir] is valley or not
     	for(int i=0;i<d;i++){
-    		if(i >= v_position[v_posi]){
-    			v_posi++;
-    			posi++;
-    		}
-    		result = Math.pow(i-position[posi], 2)*EdgeProbaHisto[i];
+    		result = Math.pow(i-maxposi, 2)*EdgeProbaHisto[i];
     	}
     	return result;
     }

@@ -15,6 +15,14 @@ import java.util.Vector;
 
 import javax.imageio.ImageIO;
 
+import jxl.Workbook;
+import jxl.write.Label;
+import jxl.write.Number;
+import jxl.write.WritableCellFormat;
+import jxl.write.WritableFont;
+import jxl.write.WritableSheet;
+import jxl.write.WritableWorkbook;
+
 import org.medtoolbox.jviewbox.viewport.Viewport;
 import org.medtoolbox.jviewbox.viewport.ViewportCluster;
 import org.medtoolbox.jviewbox.viewport.ViewportTool;
@@ -35,6 +43,8 @@ public class RunLengthMat extends ViewportTool{
 	private static int[][] isCheck;
 	private static int _xbegin, _ybegin, xend,yend;
 	private static int ROItotal = 0;
+	private static int imagenumber = 0;
+	static double[][][] Values = new double[2][4][11];
 	
 	//test用 記得刪掉
 	/*private static int[][] test = {{0,1,2,3},{1,1,2,3},{2,2,2,3},{3,3,3,3}};
@@ -245,11 +255,11 @@ public class RunLengthMat extends ViewportTool{
 //        }
 //	}
 
-	public RunLengthMat(double[][] phi, BufferedImage orig, int xbegin,int ybegin,int xen, int yen,int roitotal){
+	public RunLengthMat(double[][] phi, BufferedImage orig, int xbegin,int ybegin,int xen, int yen,int roitotal,int imagenum){
 		super("RunLengh", "RunLengthMat of Image", "", "");
 		mask = phi;
 		ROItotal = roitotal;
-		int slicenum;  
+		imagenumber = imagenum;
 		origimage = orig;
 		_xbegin = xbegin;
 		xend = xen;
@@ -280,6 +290,7 @@ public class RunLengthMat extends ViewportTool{
 						* (level - 1) * 10) / 10;
 			}
 		}
+		System.out.println("max is "+max);
 		// 浪費了 [max+1][0]的空間
 		/*int[][] testmatrix = new int[4][5];
 		testPNmatrix = new int[4][5];
@@ -343,14 +354,6 @@ public class RunLengthMat extends ViewportTool{
 							GLRmatrix[(int) GrayValue[i][j]][length]++;
 						}
 					}
-				// this is used to confirm my guess , need to be delete
-				for(int i=0;i<GLRmatrix.length;i++){
-				for(int e : GLRmatrix[i]){
-					System.out.print(e+" ");
-				}
-				System.out.println();
-				}
-				///////////
 				for (int i = h1-1; i >=0 ; i--)
 					for (int j = 0; j < w1; j++) {
 						if (isCheck[i][j] == 0 && mask[i][j] == 0) {
@@ -406,22 +409,23 @@ public class RunLengthMat extends ViewportTool{
 				ONr += total;
 				total = 0;
 			}
-			for (int i = 1; i < 2; i++) {	//modify i = 0
-				if (i == 0)
+			for (int i = 1; i < 2; i++) {	//modify i = 0 about out or in
+				
+				/*if (i == 0)
 					System.out.println("===================angle is "+dir+" Outside==================");
 				else
-					System.out.println("===================angle is "+dir+" Inside==================");
-				SRE(i);
-				LRE(i);
-				GLN(max, i);
-				RLN(i);
-				RP(i,ROItotal);
-				LGRE(max, i);
-				HGRE(max, i);
-				SRLGE(i);
-				SRHGE(i);
-				LRLGE(i);
-				LRHGE(i);
+					System.out.println("===================angle is "+dir+" Inside==================");*/
+				Values[i][dir/45][0] = SRE(i);
+				Values[i][dir/45][1] = LRE(i);
+				Values[i][dir/45][2] = GLN(max, i);
+				Values[i][dir/45][3] = RLN(i);
+				Values[i][dir/45][4] = RP(i,ROItotal);
+				Values[i][dir/45][5] = LGRE(max, i);
+				Values[i][dir/45][6] = HGRE(max, i);
+				Values[i][dir/45][7] = SRLGE(i);
+				Values[i][dir/45][8] = SRHGE(i);
+				Values[i][dir/45][9] = LRLGE(i);
+				Values[i][dir/45][10] = LRHGE(i);
 			}
 			for(int m = isCheck.length-1; m >= 0; m--)
 				Arrays.fill(isCheck[m], 0);
@@ -438,11 +442,71 @@ public class RunLengthMat extends ViewportTool{
 			Arrays.fill(OGLRNVector,0);
 			Arrays.fill(ORLRNVector,0);
 			Nr = 0; ONr=0;
-			System.out.println();
-			System.out.println();
+			/*System.out.println();
+			System.out.println();*/
+		}
+		for(int i =1;i<2;i++){
+			try{
+				WritableWorkbook workbook = null;
+				if(i==1)
+					workbook = Workbook.createWorkbook(new File("C:/Users/cebleclipse/Desktop/RunLength/pn9_rf40/Inside/Image"+imagenum+".xls"));
+				else
+					workbook = Workbook.createWorkbook(new File("C:/Users/cebleclipse/Desktop/RunLength/pn9_rf40/Background/Image"+imagenum+".xls"));
+				//將工作表一取名成 First Sheet
+		    	WritableSheet sheet = workbook.createSheet("Image"+imagenum, 0);
+		    	// first(0) is column second(2) para is row, and (0,2) in excel is (A,3)  
+		    	WritableFont arial14font = new WritableFont(WritableFont.ARIAL, 14); 
+		    	WritableCellFormat arial14format = new WritableCellFormat (arial14font);
+		    	WritableFont arial12font = new WritableFont(WritableFont.ARIAL, 12); 
+		    	WritableCellFormat arial12format = new WritableCellFormat (arial12font);
+		    	Label label = new Label(2,0, "SRE",arial14format);
+		    	sheet.addCell(label); 
+		    	Label label1 = new Label(3,0, "LRE",arial14format);
+		    	sheet.addCell(label1); 
+		    	Label label5 = new Label(4,0, "GLN",arial14format);
+		    	sheet.addCell(label5); 
+		    	Label label2 = new Label(5,0, "RLN",arial14format);
+		    	sheet.addCell(label2); 
+		    	Label label3 = new Label(6,0, "RP",arial14format);
+		    	sheet.addCell(label3); 
+		    	Label label4 = new Label(7,0, "LGRE",arial14format);
+		    	sheet.addCell(label4); 
+		    	Label label6 = new Label(0,0, "angle",arial14format);
+		    	sheet.addCell(label6); 
+		    	Label label7 = new Label(0,1, "0",arial14format);
+		    	sheet.addCell(label7); 
+		    	Label label8 = new Label(0,2, "45",arial14format);
+		    	sheet.addCell(label8); 
+		    	Label label9 = new Label(0,3, "90",arial14format);
+		    	sheet.addCell(label9); 
+		    	Label label10 = new Label(0,4, "135",arial14format);
+		    	sheet.addCell(label10); 
+		    	Label label11 = new Label(8,0,"HGRE",arial14format);
+		    	sheet.addCell(label11);
+		    	Label label12 = new Label(9,0,"SRLGE",arial14format);
+		    	sheet.addCell(label12);
+		    	Label label13 = new Label(10,0,"SRHGE",arial14format);
+		    	sheet.addCell(label13);
+		    	Label label14 = new Label(11,0,"LRLGE",arial14format);
+		    	sheet.addCell(label14);
+		    	Label label15 = new Label(12,0,"LRHGE",arial14format);
+		    	sheet.addCell(label15);
+		    	
+		    	Number number = new Number(100, 100, 0,arial12format); 
+		    	for(int m = 0; m<4; m++)
+		    	for(int j =0;j<11;j++){
+		    		number.setValue(Values[i][m][j]);
+		    		sheet.addCell(number.copyTo(j+2,m+1));
+		    	}
+		    	workbook.write(); 
+		    	workbook.close();
+		    }
+		    catch(Exception ex){
+		    	ex.printStackTrace();
+		    }
 		}
 	}
-	private static void LRHGE(int inside) {
+	private static double LRHGE(int inside) {
 		// TODO Auto-generated method stub
 		double lrhge = 0;
 		if(inside == 1){
@@ -458,9 +522,10 @@ public class RunLengthMat extends ViewportTool{
 			lrhge = lrhge / ONr;
 		}
 			
-			System.out.println("LRHGE is "+lrhge);
+			//System.out.println("LRHGE is "+lrhge);
+			return lrhge;
 	}
-	private static void LRLGE(int inside) {
+	private static double LRLGE(int inside) {
 		// TODO Auto-generated method stub
 		double lrlge = 0;
 		if(inside==1){
@@ -475,9 +540,10 @@ public class RunLengthMat extends ViewportTool{
 					lrlge += (Math.pow(j, 2) * OGLRPNmatrix[i - 1][j]) / Math.pow(i, 2);
 			lrlge = lrlge / ONr;
 		}
-			System.out.println("LRLGE is "+lrlge);
+			//System.out.println("LRLGE is "+lrlge);
+			return lrlge;
 	}
-	private static void SRHGE(int inside) {
+	private static double SRHGE(int inside) {
 		// TODO Auto-generated method stub
 		double srhge=0;
 		if (inside == 1) {
@@ -491,9 +557,10 @@ public class RunLengthMat extends ViewportTool{
 					srhge += (Math.pow(i, 2) * OGLRmatrix[i - 1][j]) / Math.pow(j, 2);
 			srhge = srhge / ONr;
 		}
-		System.out.println("SRHGE is "+srhge);
+		//System.out.println("SRHGE is "+srhge);
+		return srhge;
 	}
-	private static void SRLGE(int inside) {
+	private static double SRLGE(int inside) {
 		// TODO Auto-generated method stub
 		double srlge = 0;
 		if (inside == 1) {
@@ -507,9 +574,10 @@ public class RunLengthMat extends ViewportTool{
 					srlge += OGLRPNmatrix[i - 1][j] / (Math.pow(i, 2) * Math.pow(j, 2));
 			srlge = srlge / ONr;
 		}
-		System.out.println("SRLGE is "+srlge);
+		//System.out.println("SRLGE is "+srlge);
+		return srlge;
 	}
-	private static void HGRE(int max,int inside) {
+	private static double HGRE(int max,int inside) {
 		// TODO Auto-generated method stub
 		double hgre = 0;
 		if (inside == 1) {
@@ -523,9 +591,9 @@ public class RunLengthMat extends ViewportTool{
 			}
 			hgre = hgre / ONr;
 		}
-		System.out.println("HGRE is "+hgre);
+		return hgre;
 	}
-	private static void LGRE(int max,int inside) {
+	private static double LGRE(int max,int inside) {
 		// TODO Auto-generated method stub
 		double lgre = 0;
 		if (inside == 1) {
@@ -539,9 +607,10 @@ public class RunLengthMat extends ViewportTool{
 			}
 			lgre = lgre / ONr;
 		}
-		System.out.println("LGRE is "+lgre);
+		//System.out.println("LGRE is "+lgre);
+		return lgre;
 	}
-	private static void RP(int inside, int roitotal) {
+	private static double RP(int inside, int roitotal) {
 		// TODO Auto-generated method stub
 		double nr = 0;
 		if(inside==1)
@@ -550,9 +619,10 @@ public class RunLengthMat extends ViewportTool{
 			roitotal = h1*w1-roitotal;
 			nr = ONr / roitotal;
 		}
-		System.out.println("RP is "+ nr);
+		//System.out.println("RP is "+ nr);
+		return nr;
 	}
-	private static void RLN(int inside) {
+	private static double RLN(int inside) {
 		// TODO Auto-generated method stub
 		double rln = 0;
 		if (inside == 1) {
@@ -566,9 +636,10 @@ public class RunLengthMat extends ViewportTool{
 			}
 			rln = rln / ONr;
 		}
-		System.out.println("RLN of is "+rln);
+		//System.out.println("RLN of is "+rln);
+		return rln;
 	}
-	private static void GLN(int max,int inside) {
+	private static double GLN(int max,int inside) {
 		// TODO Auto-generated method stub
 		double gln = 0;
 		if (inside == 1) {
@@ -580,9 +651,10 @@ public class RunLengthMat extends ViewportTool{
 				gln += Math.pow(OGLRNVector[i], 2);
 			gln = gln / ONr;
 		}
-		System.out.println("GLN is "+gln);
+		//System.out.println("GLN is "+gln);
+		return gln;
 	}
-	private static void LRE(int inside) {
+	private static double LRE(int inside) {
 		// TODO Auto-generated method stub
 		double lre=0;
 		if (inside == 1) {
@@ -596,9 +668,10 @@ public class RunLengthMat extends ViewportTool{
 			}
 			lre = lre / ONr;
 		}
-		System.out.println("LRE is "+lre);
+		//System.out.println("LRE is "+lre);
+		return lre;
 	}
-	private static void SRE(int inside) {
+	private static double SRE(int inside) {
 		// TODO Auto-generated method stub
 		double sre=0,temp = 0;
 		if (inside == 1) {
@@ -612,7 +685,8 @@ public class RunLengthMat extends ViewportTool{
 			}
 			sre = sre / ONr;
 		}
-		System.out.println("SRE is "+sre);
+		//System.out.println("SRE is "+sre);
+		return sre;
 	}
 	private static int Length(int i, int j, int xdir, int ydir,double[][] mask,int inside) {
 		// TODO Auto-generated method stub

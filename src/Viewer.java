@@ -120,17 +120,19 @@ public class Viewer extends JFrame
   	* A special class for skullstripping 
   	*/
     private Vector _skullstripper = new Vector(1,1); 
+    
  
     /**
      * Constructs a viewer to display the input images with the specified file.
      * @param	file		a file representing the input image.
      * @throws IOException 
      */
-    public Viewer(File file) throws IOException
+    public Viewer(File file, File file2) throws IOException
     {
 		super("LevelSet for brain image segmentation");
 		
 		// Create the GUI showing the images and toolbars.
+		WriteData(file,file2,1);
 		_setGUI(file);	
 	 }
 
@@ -142,7 +144,7 @@ public class Viewer extends JFrame
      */
     public static void main(String[] args) throws IOException 
 	{
-		File file;
+		File file,file2 = null;
 		// If there is no command-line arguments, pop up a JFileChooser and
 		// let the user choose image file to load
 		if (args.length == 0) {
@@ -158,12 +160,14 @@ public class Viewer extends JFrame
 		}
 		// Use command-line arguments
 		else {
+			//file is standard mask and file2 is origin image
 			file = new File(args[0]);
+			file2 = new File(args[1]);
+			System.out.println("directory? "+file.isDirectory());
 		}
 		
 		// Create a Viewer and make it visible
-		
-		Viewer viewer = new Viewer(file);
+		Viewer viewer = new Viewer(file,file2);
 		viewer.setDefaultCloseOperation(EXIT_ON_CLOSE);
 		viewer.setSize(800, 600);
 		viewer.setVisible(true);
@@ -263,6 +267,62 @@ public class Viewer extends JFrame
 	
 	}
   
+	
+	/**
+	 * write to excel
+	 * @throws IOException 
+	 */
+	private void WriteData(File file, File file2,int imagenumber) throws IOException{
+		if (file.isFile() && file.getName().endsWith(".png")){
+			if(imagenumber>2 && imagenumber < 53){
+			String Path = file.getAbsolutePath();
+			String Path2 = file2.getAbsolutePath();
+			Path.replaceAll("\\\\", "/");
+			Path2.replaceAll("\\\\", "/");
+			System.out.println("path is "+Path);
+			System.out.println("path2 is "+Path2);
+			BufferedImage origImage = ImageIO.read(new File(Path2));
+			BufferedImage maskimage = ImageIO.read(new File(Path));
+			// Fill in the double array with the original data
+			_height = origImage.getHeight();
+			_width = origImage.getWidth();
+			double[][] data = new double[_height][_width];
+			Raster origRaster = maskimage.getData();
+			int xbegin = _width, ybegin = _height,xend = 0, yend = 0,roitotal=0;
+			for (int j = 0; j < _height; j++) {
+				for (int i = 0; i < _width; i++) {
+					//data[j][i] = origRaster.getSampleDouble(i, j, 0);
+					if(origRaster.getSampleDouble(i, j, 0)>0){
+						data[j][i] = 1;
+						if(j<ybegin)
+							ybegin = j;
+						if(j > yend)
+							yend = j;
+						if(i < xbegin)
+							xbegin=i;
+						if(i > xend)
+							xend = i;
+						roitotal++;
+					}
+					else
+						data[j][i] = 0;
+				}
+			}
+			//RunLengthMat run = new RunLengthMat(data,origImage,xbegin,ybegin,xend,yend,roitotal,imagenumber);
+			TamuraTextureFeature run3 = new TamuraTextureFeature(data,origImage,xbegin,ybegin,xend,yend,roitotal,imagenumber);
+			//Glcm run2 = new Glcm(data,origImage,xbegin,ybegin,xend,yend,imagenumber);
+			}
+			}
+			else if(file.isDirectory()){
+				File[] contents = file.listFiles();
+				File[] contents2 = file2.listFiles();
+				for (int i = 0; i < contents.length; i++) {
+					//檢查圖片編號是否從0開始
+					WriteData(contents[i], contents2[i],i+1);
+			    }
+			}
+		System.out.println("==========Done==========");
+	}
   
 	/**
 	 * Adds tools to the toolbar.
@@ -317,8 +377,8 @@ public class Viewer extends JFrame
 		//Iterator it = _grid.getViewports().iterator();
 		//Viewport origViewport = (Viewport)it.next();
 		//BufferedImage origImage = (BufferedImage)origViewport.getImage();
-		BufferedImage origImage = ImageIO.read(new File("C:/Users/matlab/Desktop/R00525047/materials/sbd/3mm/t1/pn1_rf0/t1_icbm_normal_3mm_pn1_rf0_025.dcm"));
-		BufferedImage maskimage = ImageIO.read(new File("C:/Users/matlab/Desktop/R00525047/materials/sbd/truth/3mm/standard mask/I25staMask.png"));
+		/*BufferedImage origImage = ImageIO.read("C:/Users/matlab/Desktop/R00525047/materials/sbd/3mm/t1/pn1_rf0/t1_icbm_normal_3mm_pn1_rf0_025.dcm");
+		BufferedImage maskimage = ImageIO.read(new File(path));
 		// Fill in the double array with the original data
 		_height = origImage.getHeight();
 		_width = origImage.getWidth();
@@ -344,8 +404,6 @@ public class Viewer extends JFrame
 					data[j][i] = 0;
 			}
 	    }
- 	    System.out.println("I am ready in");
- 	    System.out.println("xbegin is "+ xbegin+" xend is "+ xend + " ybegin is "+ ybegin + " yend is "+yend+" roitotal is "+roitotal);
  	    //RunLengthMat run = new RunLengthMat(data,origImage,xbegin,ybegin,xend,yend,roitotal);
  	    TamuraTextureFeature run3 = new TamuraTextureFeature(data,origImage,xbegin,ybegin,xend,yend,roitotal);
  	    //Glcm run2 = new Glcm(data,origImage,xbegin,ybegin,xend,yend);
@@ -357,8 +415,9 @@ public class Viewer extends JFrame
            SkullStripper slice = (SkullStripper)_skullstripper.elementAt(i);
            //System.out.print("height="+_height +"in veiwer slice = "+slice.slice);
            slice.initialization(image.getBufferedImage());
-        }
-        
+        }*/
+		//}
+		//else if(file.isDirectory())
 		// Link the ToolBar to the ViewportGrid
 		_grid.registerViewportToolBar(_toolBar);
 		// Create a JControlSet for adjusting controlled parameters.
@@ -370,6 +429,5 @@ public class Viewer extends JFrame
 		getContentPane().add(_grid, BorderLayout.CENTER);
 		getContentPane().add(_jControlSet, BorderLayout.WEST);
 		getContentPane().add(new JLabel(file.toString()), BorderLayout.SOUTH);
-	    
 	}
 }
