@@ -1,6 +1,8 @@
 package Texture;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -85,6 +87,8 @@ public class Glcm extends ViewportTool{
 	 * @mask = phi
 	 */
 	double[][] mask;
+	
+	private static int ArraySize;
 
 
 //	public void mousePressed(ViewportCluster vpc, Viewport vp, MouseEvent e,
@@ -120,8 +124,9 @@ public class Glcm extends ViewportTool{
 //		// compute GLCM method
 //	}
 //	
-	public Glcm(double[][] phi, BufferedImage orig, int _xbegin,int _ybegin,int xen, int yen, int imagenumber) throws IOException {		
+	public Glcm(double[][] phi, BufferedImage orig, int _xbegin,int _ybegin,int xen, int yen, int imagenumber,int arraysize) throws IOException {		
 		super("GLCM", "Gray-level construct methods of Image", "", "");
+		long StartTime = System.currentTimeMillis();
 		//to determine which slice it is.
 		int angle = 0;
 		double[][][] cpGray = new double[4][][];
@@ -132,14 +137,16 @@ public class Glcm extends ViewportTool{
 		yend = yen;
 		mask = phi;
 		imagenum = imagenumber;
+		ArraySize = arraysize;
 		BufferedImage greyImage = getGrayScaleAvg(origimage, 256);
 		for(int i =0;i<4;i++){
 			System.out.println("=========================================================================");
+			angle = i*45;
 			cpGray[i] = ComputeGlcm(256, greyImage,angle,mask);
-			angle +=45;
 			System.out.println();
 		}
 		// compute GLCM method
+		System.out.println("Using Time:" + (System.currentTimeMillis() - StartTime) + " ms");
 	}
 	
 	public static BufferedImage getGrayScaleAvg(BufferedImage img, int level) {
@@ -228,7 +235,19 @@ public class Glcm extends ViewportTool{
 		double[][] comatrix = new double[Co_size][Co_size];
 		double[][] cpGray = GrayValue;
 		int xoffset=0,yoffset=0;
-		int total = 0;
+		int total = ArraySize*ArraySize;
+		StringBuffer OutsASM = new StringBuffer();
+		StringBuffer OutsCon = new StringBuffer(); 
+		StringBuffer OutsCOR = new StringBuffer();
+		StringBuffer OutsDis = new StringBuffer();
+    	FileWriter fw =null;
+    	BufferedWriter bw =null;
+    	FileWriter fw1 =null;
+    	BufferedWriter bw1 =null;
+    	FileWriter fw2=null;
+    	BufferedWriter bw2 =null;
+    	FileWriter fw3 =null;
+    	BufferedWriter bw3 =null;
 		switch(angle){
 		case 0:
 			xoffset = 1;
@@ -250,21 +269,79 @@ public class Glcm extends ViewportTool{
 		/**
 		 * 此處_xBegin _yBegin xend yend 皆由skullstripper中取得，目前skullstripper並無這些函數 可以的話試看看自己修改
 		 */
-		for(int inside = 1; inside<2; inside++){ //about out or in
-			if(inside == 0){
+		//for(int inside = 1; inside<2; inside++){ //about out or in
+			//if(inside == 0){
 				for (int u = 0; u < h1; u++) {
 					for (int v = 0; v < w1; v++) {
-						int u2 = u + yoffset;
-						int v2 = v + xoffset;
-						if (mask[u][v] == inside && u2 < h1 && v2 < w1 && u2 > 0 && v2 > 0) {
-							comatrix[(int) GrayValue[u][v]][(int) GrayValue[u2][v2]]++;
-							total++;
+						for (int iu = u - (ArraySize / 2); iu <= u	+ (ArraySize / 2); iu++) {
+							for (int iv = v - (ArraySize / 2); iv <= v	+ (ArraySize / 2); iv++) {
+								int u2 = iu + yoffset;
+								int v2 = iv + xoffset;
+								if (u2 < h1 && v2 < w1	&& u2 >= 0 && v2 >= 0 && iu >= 0 && iu< h1 && iv >=0 && iv < w1) {
+									comatrix[(int) GrayValue[iu][iv]][(int) GrayValue[u2][v2]]++;
+									//total++;
+								}
+							}
 						}
+						Values[1][(int) angle/45][0] = ASM(comatrix, total);
+						Values[1][(int) angle/45][1] = CON(comatrix, total);
+						//Values[inside][(int) angle/45][2] = ENT(comatrix, total);
+						//Values[inside][(int) angle/45][3] = HOM(comatrix, total);
+						Values[1][(int) angle/45][4] = DIS(comatrix, total);
+						Values[1][(int) angle/45][5] = COR(comatrix, total);
+						for (int m = 0; m < comatrix.length; m++) {
+							Arrays.fill(comatrix[m], 0);
+						}
+						OutsASM.append(Values[1][(int) angle/45][0]);
+						OutsCon.append(Values[1][(int) angle/45][1]);
+						OutsCOR.append(Values[1][(int) angle/45][5]);
+						OutsDis.append(Values[1][(int) angle/45][4]);
+						if(v != w1-1){
+							OutsASM.append("\t");
+							OutsCon.append("\t");
+							OutsCOR.append("\t");
+							OutsDis.append("\t");
+						}
+					}
+		    		try {
+						fw = new FileWriter("C:/Users/cebleclipse/Desktop/GLCM_point/TestSpeedASM_GLCM_"+angle+".txt ", true);
+						bw = new BufferedWriter(fw);
+						bw.write(OutsASM.toString());
+						bw.newLine();
+						/*fw1 = new FileWriter("C:/Users/cebleclipse/Desktop/GLCM_point/TestCon_GLCM_"+angle+".txt ", true);
+						bw1 = new BufferedWriter(fw1);
+						bw1.write(OutsCon.toString());
+						bw1.newLine();		
+						fw2 = new FileWriter("C:/Users/cebleclipse/Desktop/GLCM_point/TestDis_GLCM_"+angle+".txt ", true);
+						bw2 = new BufferedWriter(fw2);
+						bw2.write(OutsDis.toString());
+						bw2.newLine();	
+						fw3 = new FileWriter("C:/Users/cebleclipse/Desktop/GLCM_point/TestCor_GLCM_"+angle+".txt ", true);
+						bw3 = new BufferedWriter(fw3);
+						bw3.write(OutsCOR.toString());
+						bw3.newLine();	*/
+						//System.out.println("In");
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					OutsASM.delete(0, OutsASM.length());
+					OutsCon.delete(0, OutsCon.length());
+					OutsCOR.delete(0, OutsCOR.length());
+					OutsDis.delete(0, OutsDis.length());
+					try {
+						bw.close();
+						/*bw1.close();
+						bw2.close();
+						bw3.close();*/
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
 					}
 				}
 				//System.out.println("=============================== "+angle +" Outside===============================");
-			}
-			else{
+			//}
+			/*else{
 				for (int u = ybegin; u < yend; u++) {
 					for (int v = xbegin; v < xend; v++) {
 						int u2 = u + yoffset;
@@ -279,31 +356,31 @@ public class Glcm extends ViewportTool{
 					}
 				}				
 				//System.out.println("=============================== "+angle +" Inside===============================");
-			}
+			}*/
 			/*System.out.println(angle+" degree："+"Asm value is " + ASM(comatrix, total));
 			System.out.println(angle+" degree："+"CON value is " + CON(comatrix, total));
 			System.out.println(angle+" degree："+"ENT value is " + ENT(comatrix, total));
 			System.out.println(angle+" degree："+"HOM value is " + HOM(comatrix, total));
 			System.out.println(angle+" degree："+"DIS value is " + DIS(comatrix, total));
 			System.out.println(angle+" degree："+"COR value is " + COR(comatrix, total));*/
-			Values[inside][(int) angle/45][0] = ASM(comatrix, total);
+			/*Values[inside][(int) angle/45][0] = ASM(comatrix, total);
 			Values[inside][(int) angle/45][1] = CON(comatrix, total);
 			Values[inside][(int) angle/45][2] = ENT(comatrix, total);
 			Values[inside][(int) angle/45][3] = HOM(comatrix, total);
 			Values[inside][(int) angle/45][4] = DIS(comatrix, total);
-			Values[inside][(int) angle/45][5] = COR(comatrix, total);
+			Values[inside][(int) angle/45][5] = COR(comatrix, total);*/
 			/*System.out.println(angle+" degree："+"Asm value is " + Values[inside][(int) angle/45][0]);
 			System.out.println(angle+" degree："+"CON value is " + Values[inside][(int) angle/45][1]);
 			System.out.println(angle+" degree："+"ENT value is " + Values[inside][(int) angle/45][2]);
 			System.out.println(angle+" degree："+"HOM value is " + Values[inside][(int) angle/45][3]);
 			System.out.println(angle+" degree："+"DIS value is " + Values[inside][(int) angle/45][4]);
 			System.out.println(angle+" degree："+"COR value is " + Values[inside][(int) angle/45][5]);*/
-			total = 0;
-			for (int m = 0; m < comatrix.length; m++) {
+			//total = 0;
+			/*for (int m = 0; m < comatrix.length; m++) {
 				Arrays.fill(comatrix[m], 0);
-			}
-		}
-	    try{
+			}*/
+		//}
+	    /*try{
 	    	WritableWorkbook workbook = null;
 	    	for(int Insd = 1;Insd<2;Insd++){
 	    	if(Insd==1)
@@ -352,7 +429,7 @@ public class Glcm extends ViewportTool{
 	    }
 	    catch(Exception ex){
 	    	ex.printStackTrace();
-	    }
+	    }*/
 		return cpGray;
 	}
 

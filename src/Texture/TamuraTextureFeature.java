@@ -3,8 +3,11 @@ package Texture;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.awt.image.Raster;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Scanner;
 import java.util.Vector;
 
@@ -31,6 +34,7 @@ public class TamuraTextureFeature extends ViewportTool{
 	private static int ybegin,xbegin,xend,yend;
 	private static int ROItotal;
 	private static int height, width;
+	private static int ArraySize;
 	/**
 	 * Vector matrix
 	 */
@@ -46,7 +50,7 @@ public class TamuraTextureFeature extends ViewportTool{
 	 */
 	private static double[][] mask;
 	
-	public TamuraTextureFeature(double[][] phi, BufferedImage orig, int _xbegin,int _ybegin,int xen, int yen,int roi,int imagenum){
+	public TamuraTextureFeature(double[][] phi, BufferedImage orig, int _xbegin,int _ybegin,int xen, int yen,int roi,int imagenum,int arraysize){
 		super("TamuraTextureFeature", "TamuraTextureFeature of Image", "", "");
 		origimage = orig;
 		xbegin = _xbegin;
@@ -56,6 +60,7 @@ public class TamuraTextureFeature extends ViewportTool{
 		mask = phi;
 		ROItotal = roi;
 		double cor,cont,dir=0;
+		ArraySize = arraysize;
 		//transform level to 256
 		getGrayScaleAvg(origimage,256);
 		for(int i = 1;i<2;i++){ //about out or in
@@ -66,10 +71,10 @@ public class TamuraTextureFeature extends ViewportTool{
 			System.out.println("Cor is "+Cor(i));
 			System.out.println("Contrast is "+Contrast(i)); */
 			//System.out.println("Dir is "+Dir(16,12,i));
-			cor = Cor(i);
-			cont = Contrast(i);
-			dir = Dir(16,12,i);
-			try{
+			//cor = Cor(i);
+			//cont = Contrast(i);
+			dir = Dir(16,2,i);
+			/*try{
 		    	WritableWorkbook workbook = null;
 		    	if(i==1)
 		    		workbook = Workbook.createWorkbook(new File("C:/Users/cebleclipse/Desktop/backup/Tamura/pn5_rf20/Inside/Image"+imagenum+".xls"));
@@ -100,7 +105,7 @@ public class TamuraTextureFeature extends ViewportTool{
 			}
 		    catch(Exception ex){
 		    	ex.printStackTrace();
-		    }
+		    }*/
 		}
 	}
 	
@@ -181,12 +186,16 @@ public class TamuraTextureFeature extends ViewportTool{
      * 有需要增加的參數~~~
      */
     public static double Cor(int inside){
-    	double cor = 0;
     	double maxV = 0;
+    	double cor = 0;
     	double [][][] A = new double[6][height][width];
     	int BestS=0;
     	//denominator is region of interest, if inside == 1, it means the total pixel of roi of image,else the outside, roi inside+roi outside == image size
     	int total = 0,denominator=1;
+    	FileWriter fw =null;
+    	BufferedWriter bw =null;
+    	StringBuffer outs = new StringBuffer();
+    	
     	//step 1
     	for(int m=0;m<height;m++){
     		for(int n =0; n < width;n++){
@@ -194,64 +203,96 @@ public class TamuraTextureFeature extends ViewportTool{
     				A[0][m][n] = GrayValue[m][n];
     		}
     	}
-		if (inside == 1) {
-			denominator = ROItotal;
-			for (int k = 1; k < 6; k++) {
-				for (int m = ybegin; m < yend; m++) {
-					for (int n = xbegin; n < xend; n++) {
-						for (int i = (int) (m - Math.pow(2, k - 1)); i < (int) (m + Math.pow(2, k - 1)); i++) {
-							for (int j = (int) (n - Math.pow(2, k - 1)); j < (int) (n + Math.pow(2, k - 1)); j++) {
-								// test the border to prevent out of array
-								if (i >= 0 && i < height && j >= 0 && j < width && mask[m][n] == inside && mask[i][j] == inside) {
-									A[k][m][n] += GrayValue[i][j];
-									total++;
+			denominator = ArraySize*ArraySize;
+			for (int m = 0; m < height; m++) {
+				for (int n = 0; n < width; n++) {
+						for (int k = 1; Math.pow(2, k - 1) < ArraySize; k++) {
+							for (int im = m - (ArraySize / 2); im <= m + (ArraySize / 2); im++)
+								for (int in = n - (ArraySize / 2); in <= n + (ArraySize / 2); in++) {
+									if(im >=0 && im < height && in >=0 && in < width){ // 確定點是在範圍內
+									for (int i = (int) (im - Math.pow(2, k - 1)); i < (int) (im + Math.pow(2, k - 1)); i++) {
+										for (int j = (int) (in - Math.pow(2,k - 1)); j < (int) (in + Math.pow(2, k - 1)); j++) { 
+											// test the border to prevent out of array
+											if (i >= m - (ArraySize / 2) && i < m + (ArraySize / 2) + 1 && j >= n - (ArraySize / 2) && j < n + (ArraySize / 2) + 1 && i >= 0 && i < height && j>=0 && j<width) {
+												//System.out.println("i is "+i+", j is "+j+", im is "+im+", in is "+in);
+												A[k][im][in] += GrayValue[i][j];
+												total++;
+											}
+										}
+									}
+									A[k][im][in] /= total;
+									total = 0;
+									}
 								}
+						}
+						// step 2
+						double Eh = 0, Ev = 0;
+						for (int im = m - (ArraySize / 2); im <= m + (ArraySize / 2); im++) {
+							for (int in = n - (ArraySize / 2); in <= n + (ArraySize / 2); in++) {
+								if(im >=0 && im < height && in >=0 && in < width){
+								for (int k = 0; k <= (ArraySize+1) / 2; k++) {
+									if (k > 0) {
+										if (im + Math.pow(2, k - 1) < height && im - Math.pow(2, k - 1) >= 0) {
+											Ev = Math.abs(A[k][(int) (im + Math.pow(2, k - 1))][in] - A[k][(int) (im - Math.pow(2, k - 1))][in]);
+										}// 這裡超過邊界的話 就直接用0替代前面/後面
+										else if (im + Math.pow(2, k - 1) >= height) {
+											Ev = Math.abs(A[k][(int) (im - Math.pow(2, k - 1))][in]);
+										} else {
+											Ev = Math.abs(A[k][(int) (im + Math.pow(2, k - 1))][in]);
+										}
+										if (in + Math.pow(2, k - 1) < width	&& in - Math.pow(2, k - 1) >= 0) {
+											Eh = Math.abs(A[k][im][(int) (in + Math.pow(2, k - 1))]
+															- A[k][im][(int) (in - Math.pow(2,k - 1))]);
+										} else if (in + Math.pow(2, k - 1) >= width) {
+											Eh = Math.abs(A[k][im][(int) (in - Math.pow(2, k - 1))]);
+										} else {
+											Eh = Math.abs(A[k][im][(int) (in + Math.pow(2, k - 1))]);
+										}
+									} else {
+										Ev = Eh = A[k][im][in];
+									}
+									if (maxV < Math.max(Ev, Eh)) {
+										BestS = (int) Math.pow(2, k);
+										maxV = Math.max(Ev, Eh);
+									}
+								}
+								// System.out.println("MaxV is "+maxV);
+								cor += BestS;
+								maxV = 0;
+							}
 							}
 						}
-						A[k][m][n] /= total;
-						//System.out.print(A[k][m][n]+" ");
-						total = 0;
-					}
-					//System.out.println();
+						outs.append(cor / denominator);
+						if(n != width-1)
+							outs.append("\t");
+						//System.out.println("String is "+outs);
+						//reset all argument
+						cor = 0;
+						BestS=0;
+						for(int k=1;Math.pow(2, k - 1) < ArraySize;k++)
+							for(int mm=0;mm<height;mm++)
+								Arrays.fill(A[k][m],0);
+				}
+				try {
+					fw = new FileWriter("C:/Users/cebleclipse/Desktop/TestCor.txt ", true);
+					bw = new BufferedWriter(fw);
+					bw.write(outs.toString());
+					bw.newLine();
+					//System.out.println("In");
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				outs.delete(0, outs.length());
+				try {
+					bw.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
 			}
-			// step 2
-			double Eh = 0, Ev = 0;
-			for (int i = ybegin; i <= yend; i++) { 
-				for (int j = xbegin; j <= xend; j++) { 
-					for (int k = 0; k < 6; k++) { 
-						if (k > 0) {
-							if (i + Math.pow(2, k - 1) < height && i - Math.pow(2, k - 1) >= 0) {
-								Ev = Math.abs(A[k][(int) (i + Math.pow(2, k - 1))][j] - A[k][(int) (i - Math.pow(2, k - 1))][j]);
-							}// 這裡超過邊界的話 就直接用0替代前面/後面
-							else if (i + Math.pow(2, k - 1) >= height) {
-								Ev = Math.abs(A[k][(int) (i - Math.pow(2, k - 1))][j]);
-							} else {
-								Ev = Math.abs(A[k][(int) (i + Math.pow(2, k - 1))][j]);
-							}
-							if (j + Math.pow(2, k - 1) < width && j - Math.pow(2, k - 1) >= 0) {
-								Eh = Math.abs(A[k][i][(int) (j + Math.pow(2, k - 1))] - A[k][i][(int) (j - Math.pow( 2, k - 1))]);
-							} else if (j + Math.pow(2, k - 1) >= width) {
-								Eh = Math.abs(A[k][i][(int) (j - Math.pow(2, k - 1))]);
-							} else {
-								Eh = Math.abs(A[k][i][(int) (j + Math.pow(2, k - 1))]);
-							}
-						} else {
-							Ev = Eh = A[k][i][j];
-						}
-						if (maxV < Math.max(Ev, Eh)) {
-							BestS = (int) Math.pow(2, k);
-							maxV = Math.max(Ev, Eh);
-						}
-					}
-					//System.out.println("MaxV is "+maxV);
-					cor += BestS;
-					maxV = 0;
-				}
-			}
-		}
 		// computation of outside 
-		else{
+		/*else{
 			denominator = width*height - ROItotal;
 			for (int k = 1; k < 6; k++) {
 				for (int m = 0; m < height; m++) {
@@ -303,7 +344,7 @@ public class TamuraTextureFeature extends ViewportTool{
 					maxV = 0;
 				}
 			}
-		}
+		}*/
 		Values[0] = cor/denominator;
     	return cor/denominator;
     }
@@ -313,40 +354,78 @@ public class TamuraTextureFeature extends ViewportTool{
     	double mean = 0;
     	double variance = 0; 
     	double Alpha4 = 0;
-    	int total = 0;
+    	FileWriter fw =null;
+    	BufferedWriter bw =null;
+    	StringBuffer outs = new StringBuffer();
+    	int total = ArraySize * ArraySize;  //origin =0
     	if(inside == 1){
-    		for(int i = ybegin; i <= yend;i++){
-    			for(int j = xbegin ; j <= xend ; j++){
-    				if(mask[i][j]==inside){
-    					mean += GrayValue[i][j];
-    					total++;
+    		for(int i = 0; i <  height;i++){   //原 : i=ybegin, i <= yend
+    			for(int j = 0 ; j < width ; j++){  //原 : j = xbegin ; j <= xend
+    				for (int im = i - (ArraySize / 2); im <= i + (ArraySize / 2); im++)
+						for (int in = j - (ArraySize / 2); in <= j + (ArraySize / 2); in++) {
+    				if(im>=0 && im<height && in >=0 && in < width){
+    					mean += GrayValue[im][in];
+    					//total++;
     				}
+						}
+    				mean /= total;
+    	    		//total = 0;
+            		for(int im = i - (ArraySize / 2); im <= i + (ArraySize / 2); im++){
+            			for(int in = j - (ArraySize / 2); in <= j + (ArraySize / 2); in++){
+            				if(im>=0 && im<height && in >=0 && in < width){
+            					variance += Math.pow(GrayValue[im][in]-mean, 2);
+            					//total++;
+            				}
+            			}
+            		}
+            		variance = variance/total;
+            		variance = Math.pow(variance, 0.5);
+            		//total = 0;
+                	//compute alpha4
+            		for(int im = i - (ArraySize / 2); im <= i + (ArraySize / 2); im++){
+            			for(int in = j - (ArraySize / 2); in <= j + (ArraySize / 2); in++){
+            				if(im>=0 && im<height && in >=0 && in < width){
+            					Alpha4 += Math.pow((GrayValue[im][in]-mean), 4);
+            					//total++;
+            				}
+            			}
+            		}
+                	Alpha4 = Alpha4 / (total*Math.pow(variance, 4));
+                	//compute contrast n = 1/4
+                	if(Alpha4 == 0)
+                		Fcos = 0;
+                	else
+                		Fcos = variance / Math.pow(Alpha4, 0.25);
+					outs.append(Fcos);
+					if(j != width-1)
+						outs.append("\t");
+					//System.out.println("String is "+outs);
+					//reset all argument
+					Fcos = 0;
+					variance = 0;
+					Alpha4 = 0;
+					mean = 0;
     			}
-    		}
-    		mean /= total;
-    		total = 0;
-    		for(int i = ybegin; i <= yend;i++){
-    			for(int j = xbegin ; j <= xend ; j++){
-    				if(mask[i][j]==inside){
-    					variance += Math.pow(GrayValue[i][j]-mean, 2);
-    					total++;
-    				}
-    			}
-    		}
-    		variance = variance/total;
-    		variance = Math.pow(variance, 0.5);
-    		total = 0;
-    	//compute alpha4
-    		for(int i = ybegin; i <= yend;i++){
-    			for(int j = xbegin ; j <= xend ; j++){
-    				if(mask[i][j]==inside){
-    					Alpha4 += Math.pow((GrayValue[i][j]-mean), 4);
-    					total++;
-    				}
-    			}
+    			try {
+					fw = new FileWriter("C:/Users/cebleclipse/Desktop/TestContrast.txt ", true);
+					bw = new BufferedWriter(fw);
+					bw.write(outs.toString());
+					bw.newLine();
+					//System.out.println("In");
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				outs.delete(0, outs.length());
+				try {
+					bw.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
     		}
     	}
-    	else{
+    	/*else{
     		for(int i = 0; i < height;i++){
         		for(int j = 0 ; j < width ; j++){
         			if(mask[i][j]==inside){
@@ -377,13 +456,7 @@ public class TamuraTextureFeature extends ViewportTool{
         			}
         		}
         	}
-    	}
-    	Alpha4 = Alpha4 / (total*Math.pow(variance, 4));
-    	//compute contrast n = 1/4
-    	if(Alpha4 == 0)
-    		Fcos = 0;
-    	else
-    		Fcos = variance / Math.pow(Alpha4, 0.25);
+    	}*/
     	Values[1] = Fcos;
 		return Fcos;
     }
@@ -394,7 +467,6 @@ public class TamuraTextureFeature extends ViewportTool{
     	double[][] Hmatrix = new double[][]{{-1,0,1},{-1,0,1},{-1,0,1}};
     	double[][] Vmatrix = new double[][]{{1,1,1},{0,0,0},{-1,-1,-1}};
     	int sum_N_theta = 0;
-    	int num_peak = 0;
     	double[][] Filterimg = new double[height+2][width+2];
     	double[][] deltaH = new double[height][width];
     	double[][] deltaV = new double[height][width];
@@ -402,6 +474,9 @@ public class TamuraTextureFeature extends ViewportTool{
     	double[][] theta = new double[height][width];
     	double[] Ntheta = new double[d];
     	double[] EdgeProbaHisto = new double[d];
+    	StringBuffer outs = new StringBuffer();
+    	FileWriter fw =null;
+    	BufferedWriter bw =null;
     	// first step; in order to filter the deltaH and deltaV kernel, add additional 0 to img;
     	for(int i = 0; i < height;i++){
     		for(int j = 0 ; j < width; j++){
@@ -423,54 +498,77 @@ public class TamuraTextureFeature extends ViewportTool{
     		//System.out.println();
     	}
     	// second step ; construct the edge probability histogram EdgeProbaHisto and from now on , we need to separate roi into, inside and outside, two group. 
-    	for(int k = 0; k<d;k++){
-    		int accmulator = 0;
-    		if(inside == 1){
-    			for(int i = ybegin; i <= yend;i++)
-    				for(int j = xbegin ; j <= xend ; j++){
-    					if(mask[i][j]==inside){
-    						if(theta[i][j]<(2*k+1)*	Math.PI/(2*d) && theta[i][j] >= (2*k-1)*Math.PI/(2*d)){
-    							if(deltaG[i][j] >= t){
-    								accmulator++;
-    							}
-    						}
-    					}
-    			}
-    		}
-    		else{
-    			for(int i = 0; i < height;i++)
-    				for(int j = 0; j < width ; j++){
-    					if(mask[i][j]==inside)
-    						if(theta[i][j]<(2*k+1)*	Math.PI/(2*d) && theta[i][j] >= (2*k-1)*Math.PI/(2*d))
-    							if(deltaG[i][j] >= t)
-    								accmulator++;
-    				}
-    		}
-    		//System.out.println("accmulator is "+ accmulator);
-    		Ntheta[k] = accmulator;
-    		sum_N_theta += accmulator;
-    	}
-    	// compute number of peak and construct EdgeProbaHisto
-    	// find the position of peak;
-    	int maxposi = 0;
-    	double maxvalue = 0;
-    	//System.out.println("sum_N_theta is "+sum_N_theta);
-    	for(int k=0;k<d;k++){
-    		EdgeProbaHisto[k] = Ntheta[k] / sum_N_theta;
-    		//System.out.println("EdgeProbaHisto["+k+"] is : "+EdgeProbaHisto[k]);
-    		if(k==0){
-    			maxvalue = Ntheta[k] / sum_N_theta;
-    			maxposi = k;
-    		}
-    		else if((Ntheta[k] / sum_N_theta) > maxvalue){
-    			maxposi = k;	
-    			maxvalue = EdgeProbaHisto[k];
-    		}
+    	for(int i = 0; i <height;i++){
+    		for(int j = 0; j < width; j++){
+				for (int k = 0; k < d; k++) {
+					int accmulator = 0;
+					if (inside == 1) {
+						for (int im = i - (ArraySize / 2); im <= i	+ (ArraySize / 2); im++)
+							for (int in = j - (ArraySize / 2); in <= j	+ (ArraySize / 2); in++) {
+								if (im >= 0 && im < height && in >= 0 && in < width) {
+									if (theta[im][in] < (2 * k + 1) * Math.PI / (2 * d)	&& theta[im][in] >= (2 * k - 1)	* Math.PI / (2 * d)) {
+										if (deltaG[im][in] >= t) {
+											accmulator++;
+										}
+									}
+								}
+							}
+					}
+					/*
+					 * else{ for(int i = 0; i < height;i++) for(int j = 0; j <
+					 * width ; j++){ if(mask[i][j]==inside)
+					 * if(theta[i][j]<(2*k+1)* Math.PI/(2*d) && theta[i][j] >=
+					 * (2*k-1)*Math.PI/(2*d)) if(deltaG[i][j] >= t)
+					 * accmulator++; } }
+					 */
+					// System.out.println("accmulator is "+ accmulator);
+					Ntheta[k] = accmulator;
+					sum_N_theta += accmulator;
+				}
+				// compute number of peak and construct EdgeProbaHisto
+				// find the position of peak;
+				int maxposi = 0;
+				double maxvalue = 0;
+				// System.out.println("sum_N_theta is "+sum_N_theta);
+				for (int k = 0; k < d; k++) {
+					EdgeProbaHisto[k] = Ntheta[k] / sum_N_theta;
+					// System.out.println("EdgeProbaHisto["+k+"] is : "+EdgeProbaHisto[k]);
+					if (k == 0) {
+						maxvalue = Ntheta[k] / sum_N_theta;
+						maxposi = k;
+					} else if ((Ntheta[k] / sum_N_theta) > maxvalue) {
+						maxposi = k;
+						maxvalue = EdgeProbaHisto[k];
+					}
+				}
+				Fdir = thominus(EdgeProbaHisto, d, maxposi);
+				Arrays.fill(Ntheta, 0);
+				sum_N_theta = 0;
+				outs.append(Fdir);
+				if (j != width - 1)
+					outs.append("\t");
+			}
+    		try {
+				fw = new FileWriter("C:/Users/cebleclipse/Desktop/TestDirection3.txt ", true);
+				bw = new BufferedWriter(fw);
+				bw.write(outs.toString());
+				bw.newLine();
+				//System.out.println("In");
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			outs.delete(0, outs.length());
+			try {
+				bw.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
     	}
     	//System.out.println("maxposi is " + maxposi);
     	//System.out.println("maxvalue is "+ maxvalue);
     	//make a recursive class for compute the lol minus
-    	Fdir = thominus(EdgeProbaHisto,d,maxposi);
     	Values[2] = Fdir;
 		return Fdir;
     }

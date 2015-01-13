@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Scanner;
 import java.util.Vector;
 
 import Texture.*;
@@ -121,7 +122,8 @@ public class Viewer extends JFrame
   	*/
     private Vector _skullstripper = new Vector(1,1); 
     
- 
+    private static int ArraySize = 0;
+    
     /**
      * Constructs a viewer to display the input images with the specified file.
      * @param	file		a file representing the input image.
@@ -165,6 +167,9 @@ public class Viewer extends JFrame
 			file2 = new File(args[1]);
 			System.out.println("directory? "+file.isDirectory());
 		}
+		Scanner in = new Scanner(System.in);
+		System.out.println("½Ğ¿é¤Jmap size¡G");
+		ArraySize = in.nextInt();
 		
 		// Create a Viewer and make it visible
 		Viewer viewer = new Viewer(file,file2);
@@ -274,7 +279,7 @@ public class Viewer extends JFrame
 	 */
 	private void WriteData(File file, File file2,int imagenumber) throws IOException{
 		if (file.isFile() && file.getName().endsWith(".png")){
-			if(imagenumber>2 && imagenumber < 53){
+			if(imagenumber>32 && imagenumber < 34){
 			String Path = file.getAbsolutePath();
 			String Path2 = file2.getAbsolutePath();
 			Path.replaceAll("\\\\", "/");
@@ -308,9 +313,9 @@ public class Viewer extends JFrame
 						data[j][i] = 0;
 				}
 			}
-			//RunLengthMat run = new RunLengthMat(data,origImage,xbegin,ybegin,xend,yend,roitotal,imagenumber);
-			TamuraTextureFeature run3 = new TamuraTextureFeature(data,origImage,xbegin,ybegin,xend,yend,roitotal,imagenumber);
-			//Glcm run2 = new Glcm(data,origImage,xbegin,ybegin,xend,yend,imagenumber);
+			RunLengthMat run = new RunLengthMat(data,origImage,xbegin,ybegin,xend,yend,roitotal,imagenumber,ArraySize);
+			//TamuraTextureFeature run3 = new TamuraTextureFeature(data,origImage,xbegin,ybegin,xend,yend,roitotal,imagenumber,ArraySize);
+			//Glcm run2 = new Glcm(data,origImage,xbegin,ybegin,xend,yend,imagenumber,ArraySize);
 			}
 			}
 			else if(file.isDirectory()){

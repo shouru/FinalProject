@@ -6,7 +6,9 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.awt.image.Raster;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -79,6 +81,8 @@ public class RunLengthMat extends ViewportTool{
 	 * @mask = phi
 	 */
 	private double[][] mask;
+	
+	private static int ArraySize;
 	
 	/*public RunLengthMat(Matrix matrix,Vector VMatrix){
 		super("RunLengthMat", "RunLengthMat of Image", "", "");
@@ -255,8 +259,9 @@ public class RunLengthMat extends ViewportTool{
 //        }
 //	}
 
-	public RunLengthMat(double[][] phi, BufferedImage orig, int xbegin,int ybegin,int xen, int yen,int roitotal,int imagenum){
+	public RunLengthMat(double[][] phi, BufferedImage orig, int xbegin,int ybegin,int xen, int yen,int roitotal,int imagenum,int arraysize){
 		super("RunLengh", "RunLengthMat of Image", "", "");
+		long StartTime = System.currentTimeMillis();
 		mask = phi;
 		ROItotal = roitotal;
 		imagenumber = imagenum;
@@ -267,6 +272,7 @@ public class RunLengthMat extends ViewportTool{
 		yend = yen;
 		w1 = origimage.getWidth();  //1200
 	    h1 = origimage.getHeight(); //1242;
+	    ArraySize = arraysize;
 		isCheck = new int[h1][w1];
 		int xdir = 0, ydir = 0;
 		int total = 0;
@@ -290,20 +296,35 @@ public class RunLengthMat extends ViewportTool{
 						* (level - 1) * 10) / 10;
 			}
 		}
-		System.out.println("max is "+max);
+		//System.out.println("max is "+max);
 		// 浪費了 [max+1][0]的空間
 		/*int[][] testmatrix = new int[4][5];
 		testPNmatrix = new int[4][5];
 		testNVector = new int[4];
 		testRNVector = new int[5];*/
-		GLRmatrix = new int[max + 1][Math.max(yend-_ybegin,xend-_xbegin) + 2];
-		GLRPNmatrix = new int[max + 1][Math.max(yend-_ybegin,xend-_xbegin) + 2];
-		GLRNVector = new int[max + 1];
-		RLRNVector = new int[Math.max(yend-_ybegin,xend-_xbegin) + 2];
-		OGLRmatrix = new int[max + 1][Math.max(h1,w1) + 1];
-		OGLRPNmatrix = new int[max + 1][Math.max(h1,w1) + 1];
+		//GLRmatrix = new int[max + 1][Math.max(yend-_ybegin,xend-_xbegin) + 2];
+		//GLRPNmatrix = new int[max + 1][Math.max(yend-_ybegin,xend-_xbegin) + 2];
+		//GLRNVector = new int[max + 1];
+		//RLRNVector = new int[Math.max(yend-_ybegin,xend-_xbegin) + 2];
+		OGLRmatrix = new int[max + 1][ArraySize + 1];  //OGLRmatrix = new int[max + 1][Math.max(h1,w1) + 1];
+		OGLRPNmatrix = new int[max + 1][ArraySize + 1]; //OGLRPNmatrix = new int[max + 1][Math.max(h1,w1) + 1];
 		OGLRNVector = new int[max + 1];
-		ORLRNVector = new int[Math.max(h1,w1) + 1];
+		ORLRNVector = new int[ArraySize + 1]; //ORLRNVector = new int[Math.max(h1,w1) + 1];
+		StringBuffer Lre = new StringBuffer();
+		StringBuffer Gln = new StringBuffer(); 
+		StringBuffer Rln = new StringBuffer();
+		StringBuffer Lrlge = new StringBuffer();
+		StringBuffer Lrhge = new StringBuffer();
+    	FileWriter fw =null;
+    	BufferedWriter bw =null;
+    	FileWriter fw1 =null;
+    	BufferedWriter bw1 =null;
+    	FileWriter fw2=null;
+    	BufferedWriter bw2 =null;
+    	FileWriter fw3 =null;
+    	BufferedWriter bw3 =null;
+    	FileWriter fw4 =null;
+    	BufferedWriter bw4 =null;
 		for (int dir = 0; dir <= 135; dir += 45) {
 			switch (dir) {
 			case 0:
@@ -330,63 +351,166 @@ public class RunLengthMat extends ViewportTool{
 			 * 此處_xBegin _yBegin xend yend mask
 			 * 皆由skullstripper中取得，目前skullstripper並無這些函數 可以的話試看看自己修改
 			 */
-			if(dir == 0){
-				for (int i = _ybegin; i <= yend; i++)
+			//if(dir == 0){
+				/*for (int i = _ybegin; i <= yend; i++)
 					for (int j = _xbegin; j <= xend; j++) {
 						if (isCheck[i][j] == 0 && mask[i][j] == 1) {
 							length = Length(i, j, xdir, ydir, mask,1);
 							GLRmatrix[(int) GrayValue[i][j]][length]++;
 						}
-					}
-				for (int i = 0; i < h1; i++)
+					}*/
+				for (int i = 0; i < h1; i++){
+					_ybegin = i - (ArraySize / 2);
+					yend = i+(ArraySize / 2);
 					for (int j = 0; j < w1; j++) {
-						if (isCheck[i][j] == 0 && mask[i][j] == 0) {
-							length = Length(i, j, xdir, ydir, mask,0);
-							OGLRmatrix[(int) GrayValue[i][j]][length]++;
+						_xbegin = j - (ArraySize / 2);
+						xend = j + (ArraySize / 2);
+						double lre,gln,rln,lrlge,lrhge;
+						for (int im = i - (ArraySize / 2); im <= i+(ArraySize / 2);im++)
+							for(int in = j - (ArraySize / 2); in <= j + (ArraySize / 2); in++){
+								if (im >= 0 && im < h1 && in >= 0 && in < w1) {
+									if (isCheck[im][in] == 0) {
+										length = Length(im, in, xdir, ydir, mask, 0);
+										OGLRmatrix[(int) GrayValue[im][in]][length]++;
+									}
+								}
+							}
+							for (int k = 0; k <= max; k++) {
+								for (int l = 1; l <= ArraySize; l++) {
+									OGLRPNmatrix[k][l] = OGLRmatrix[k][l] * l;
+									total += OGLRmatrix[k][l];
+								}
+								OGLRNVector[k] = total;
+								total = 0;
+							}
+							for (int l = 1; l <= ArraySize; l++) {
+								for (int k = 0; k <= max; k++)
+									total += OGLRmatrix[k][l];
+								ORLRNVector[l] = total;
+								ONr += total;
+								total = 0;
+							}
+							lre = LRE(0);
+							gln = GLN(max, 0);
+							rln = RLN(0);
+							lrlge = LRLGE(0);
+							lrhge = LRHGE(0);
+							Lre.append(lre);
+							Gln.append(gln);
+							Rln.append(rln);
+							Lrlge.append(lrlge);
+							Lrhge.append(lrhge);
+							if(j!=w1-1){
+								Lre.append("\t");
+								Gln.append("\t");
+								Rln.append("\t");
+								Lrlge.append("\t");
+								Lrhge.append("\t");
+							}
+							for(int m = isCheck.length-1; m >= 0; m--)
+								Arrays.fill(isCheck[m], 0);
+							/*for(int m=GLRmatrix.length-1;m>=0;m--){
+								Arrays.fill(GLRmatrix[m], 0);
+								Arrays.fill(GLRPNmatrix[m], 0);
+							}*/
+							for(int m=OGLRmatrix.length-1;m>=0;m--){
+								Arrays.fill(OGLRmatrix[m], 0);
+								Arrays.fill(OGLRPNmatrix[m], 0);
+							}
+							//Arrays.fill(GLRNVector,0);
+							//Arrays.fill(RLRNVector,0);
+							Arrays.fill(OGLRNVector,0);
+							Arrays.fill(ORLRNVector,0);
+							ONr=0;
 						}
+						try {
+							fw = new FileWriter("C:/Users/cebleclipse/Desktop/RunLength_point/Lre_RunL_"+dir+".txt ", true);
+							bw = new BufferedWriter(fw);
+							bw.write(Lre.toString());
+							bw.newLine();
+							fw1 = new FileWriter("C:/Users/cebleclipse/Desktop/RunLength_point/Gln_RunL_"+dir+".txt ", true);
+							bw1 = new BufferedWriter(fw1);
+							bw1.write(Gln.toString());
+							bw1.newLine();		
+							fw2 = new FileWriter("C:/Users/cebleclipse/Desktop/RunLength_point/Rln_RunL_"+dir+".txt ", true);
+							bw2 = new BufferedWriter(fw2);
+							bw2.write(Rln.toString());
+							bw2.newLine();	
+							fw3 = new FileWriter("C:/Users/cebleclipse/Desktop/RunLength_point/Lrlge_RunL_"+dir+".txt ", true);
+							bw3 = new BufferedWriter(fw3);
+							bw3.write(Lrlge.toString());
+							bw3.newLine();	
+							fw4 = new FileWriter("C:/Users/cebleclipse/Desktop/RunLength_point/Lrhge_RunL_"+dir+".txt ", true);
+							bw4 = new BufferedWriter(fw4);
+							bw4.write(Lrhge.toString());
+							bw4.newLine();	
+							//System.out.println("In");
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+						try {
+							bw.close();
+							bw1.close();
+							bw2.close();
+							bw3.close();
+							bw4.close();
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+						Lre.delete(0, Lre.length());
+						Gln.delete(0, Gln.length());
+						Rln.delete(0, Rln.length());
+						Lrlge.delete(0, Lrlge.length());
+						Lrhge.delete(0, Lrhge.length());
 					}
-				}
-			else if(dir == 45){
-				for(int i = yend;i >= _ybegin; i--)
+			//}
+			/*else if(dir == 45){
+				/*for(int i = yend;i >= _ybegin; i--)
 					for(int j = _xbegin; j <= xend; j++) {
 						if (isCheck[i][j] == 0 && mask[i][j] == 1) {
 							length = Length(i, j, xdir, ydir, mask,1);
 							GLRmatrix[(int) GrayValue[i][j]][length]++;
 						}
 					}
-				for (int i = h1-1; i >=0 ; i--)
+				for (int i = 0; i < h1 ; i++)
 					for (int j = 0; j < w1; j++) {
-						if (isCheck[i][j] == 0 && mask[i][j] == 0) {
-							length = Length(i, j, xdir, ydir, mask,0);
-							OGLRmatrix[(int) GrayValue[i][j]][length]++;
+						for (int im = i - (ArraySize / 2); im <= i+(ArraySize / 2);im++)
+							for(int in = i - (ArraySize / 2); in <= i + (ArraySize / 2); in++)
+						if (isCheck[im][in] == 0 && im >=0 && im < h1 && in >=0 && in < w1) {
+							length = Length(im, in, xdir, ydir, mask,0);
+							OGLRmatrix[(int) GrayValue[im][in]][length]++;
 						}
 					}
 			}
 			else{
-				for(int i = yend;i >= _ybegin; i--)
+				/*for(int i = yend;i >= _ybegin; i--)
 					for(int j = xend; j >= _xbegin; j--) {
 						if (isCheck[i][j] == 0 && mask[i][j] == 1) {
 							length = Length(i, j, xdir, ydir, mask,1);
 							GLRmatrix[(int) GrayValue[i][j]][length]++;
 						}
 					}
-				for (int i = h1-1; i >=0 ; i--)
-					for (int j = w1-1; j >= 0; j--) {
-						if (isCheck[i][j] == 0 && mask[i][j] == 0) {
-							length = Length(i, j, xdir, ydir, mask,0);
-							OGLRmatrix[(int) GrayValue[i][j]][length]++;
+				for (int i = 0; i < h1 ; i++)
+					for (int j = 0; j < w1; j++) {
+						for (int im = i - (ArraySize / 2); im <= i+(ArraySize / 2);im++)
+							for(int in = i - (ArraySize / 2); in <= i + (ArraySize / 2); in++)
+						if (isCheck[im][in] == 0 && im >=0 && im < h1 && in >=0 && in < w1) {
+							length = Length(im, in, xdir, ydir, mask,0);
+							OGLRmatrix[(int) GrayValue[im][in]][length]++;
 						}
 					}
 			}
-			for (int i = 0; i <= max; i++) {
+			/*for (int i = 0; i <= max; i++) {
 				for (int j = 1; j <= Math.max(yend - _ybegin, xend - _xbegin)+1; j++) {
 					GLRPNmatrix[i][j] = GLRmatrix[i][j] * j;
 					total += GLRmatrix[i][j];
 				}
 				GLRNVector[i] = total;
 				total = 0;
-			}
-			for (int i = 0; i <= max; i++) {
+			}*/
+			/*for (int i = 0; i <= max; i++) {
 				for (int j = 1; j <= Math.max(h1,w1); j++) {
 					OGLRPNmatrix[i][j] = OGLRmatrix[i][j] * j;
 					total += OGLRmatrix[i][j];
@@ -408,26 +532,26 @@ public class RunLengthMat extends ViewportTool{
 				ORLRNVector[j] = total;
 				ONr += total;
 				total = 0;
-			}
-			for (int i = 1; i < 2; i++) {	//modify i = 0 about out or in
+			}*/
+			/*for (int i = 0; i < 1; i++) {	//modify i = 0 about out or in
 				
 				/*if (i == 0)
 					System.out.println("===================angle is "+dir+" Outside==================");
 				else
-					System.out.println("===================angle is "+dir+" Inside==================");*/
-				Values[i][dir/45][0] = SRE(i);
-				Values[i][dir/45][1] = LRE(i);
-				Values[i][dir/45][2] = GLN(max, i);
-				Values[i][dir/45][3] = RLN(i);
-				Values[i][dir/45][4] = RP(i,ROItotal);
-				Values[i][dir/45][5] = LGRE(max, i);
-				Values[i][dir/45][6] = HGRE(max, i);
-				Values[i][dir/45][7] = SRLGE(i);
-				Values[i][dir/45][8] = SRHGE(i);
-				Values[i][dir/45][9] = LRLGE(i);
-				Values[i][dir/45][10] = LRHGE(i);
-			}
-			for(int m = isCheck.length-1; m >= 0; m--)
+					System.out.println("===================angle is "+dir+" Inside==================");
+				//Values[i][dir/45][0] = SRE(i);
+				//Values[i][dir/45][1] = LRE(i);
+				//Values[i][dir/45][2] = GLN(max, i);
+				//Values[i][dir/45][3] = RLN(i);
+				//Values[i][dir/45][4] = RP(i,ROItotal);
+				//Values[i][dir/45][5] = LGRE(max, i);
+				//Values[i][dir/45][6] = HGRE(max, i);
+				//Values[i][dir/45][7] = SRLGE(i);
+				//Values[i][dir/45][8] = SRHGE(i);
+				//Values[i][dir/45][9] = LRLGE(i);
+				//Values[i][dir/45][10] = LRHGE(i);
+			}*/
+			/*for(int m = isCheck.length-1; m >= 0; m--)
 				Arrays.fill(isCheck[m], 0);
 			for(int m=GLRmatrix.length-1;m>=0;m--){
 				Arrays.fill(GLRmatrix[m], 0);
@@ -441,11 +565,11 @@ public class RunLengthMat extends ViewportTool{
 			Arrays.fill(RLRNVector,0);
 			Arrays.fill(OGLRNVector,0);
 			Arrays.fill(ORLRNVector,0);
-			Nr = 0; ONr=0;
+			Nr = 0; ONr=0;*/
 			/*System.out.println();
 			System.out.println();*/
 		}
-		for(int i =1;i<2;i++){
+		/*for(int i =1;i<2;i++){
 			try{
 				WritableWorkbook workbook = null;
 				if(i==1)
@@ -504,7 +628,8 @@ public class RunLengthMat extends ViewportTool{
 		    catch(Exception ex){
 		    	ex.printStackTrace();
 		    }
-		}
+		}*/
+		System.out.println("Using Time:" + (System.currentTimeMillis() - StartTime) + " ms");
 	}
 	private static double LRHGE(int inside) {
 		// TODO Auto-generated method stub
@@ -698,14 +823,14 @@ public class RunLengthMat extends ViewportTool{
 				leng+=Length(i + ydir, j + xdir, xdir, ydir, mask, inside);*/
 		isCheck[i][j] = 1;
 		if(inside == 1){
-			if (i + ydir >= _ybegin && j + xdir >= _xbegin && i + ydir <= yend && j + xdir <= xend)
+			if (i + ydir >= _ybegin && j + xdir >= _xbegin && i + ydir <= yend && j + xdir <= xend )
 				if (GrayValue[i][j] == GrayValue[i + ydir][j + xdir] && mask[i + ydir][j + xdir] == 1) {
 					leng += Length(i + ydir, j + xdir, xdir, ydir, mask, inside);
 				}
 		}
 		else{
-			if (i + ydir >= 0 && j + xdir >= 0 && i + ydir < h1 && j + xdir < w1)
-				if (GrayValue[i][j] == GrayValue[i + ydir][j + xdir] && mask[i + ydir][j + xdir] == 0) {
+			if (i + ydir >= 0 && j + xdir >= 0 && i + ydir < h1 && j + xdir < w1 && i + ydir>= _ybegin && j + xdir >= _xbegin && i + ydir <= yend && j + xdir <= xend)
+				if (GrayValue[i][j] == GrayValue[i + ydir][j + xdir] ) {  //delete掉 mask[i + ydir][j + xdir] == 0
 					leng += Length(i + ydir, j + xdir, xdir, ydir, mask, inside);
 				}
 		}
