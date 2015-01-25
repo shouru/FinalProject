@@ -38,7 +38,7 @@ import tools.GeometryContour;
 //import tools.Matrix;
 
 public class Glcm extends ViewportTool{
-	private static double[][] GrayValue;
+	/*private static double[][] GrayValue;
 	private static BufferedImage origimage;
 	private static int xwindowsize = 0;
 	private static int ywindowsize = 0;
@@ -50,7 +50,7 @@ public class Glcm extends ViewportTool{
 	/**
 	 * image length and height
 	 */
-	private static int h1,w1;
+	/*private static int h1,w1;*/
 	/**
 	 * Vector matrix
 	 */
@@ -126,35 +126,40 @@ public class Glcm extends ViewportTool{
 //	
 	public Glcm(double[][] phi, BufferedImage orig, int _xbegin,int _ybegin,int xen, int yen, int imagenumber,int arraysize) throws IOException {		
 		super("GLCM", "Gray-level construct methods of Image", "", "");
+		BufferedImage origimage;
+		int xwindowsize = 0;
+		int ywindowsize = 0;
+		int ybegin,xbegin,xend,yend;
+		int imagenum;
 		long StartTime = System.currentTimeMillis();
 		//to determine which slice it is.
 		int angle = 0;
+		int w1 = orig.getWidth();
+		int h1 = orig.getHeight();
 		double[][][] cpGray = new double[4][][];
+		double[][] GrayValue;
 		origimage = orig;
 		xbegin = _xbegin;
 		xend = xen;
 		ybegin = _ybegin;
 		yend = yen;
 		mask = phi;
-		imagenum = imagenumber;
+		//imagenum = imagenumber;
 		ArraySize = arraysize;
-		BufferedImage greyImage = getGrayScaleAvg(origimage, 256);
+		GrayValue = getGrayScaleAvg(origimage, 32,w1,h1);
 		for(int i =0;i<4;i++){
 			System.out.println("=========================================================================");
 			angle = i*45;
-			cpGray[i] = ComputeGlcm(256, greyImage,angle,mask);
+			cpGray[i] = ComputeGlcm(32,GrayValue,angle,mask,h1,w1,imagenumber);
 			System.out.println();
 		}
 		// compute GLCM method
 		System.out.println("Using Time:" + (System.currentTimeMillis() - StartTime) + " ms");
 	}
 	
-	public static BufferedImage getGrayScaleAvg(BufferedImage img, int level) {
-		w1 = img.getWidth(); // 1200
-		h1 = img.getHeight(); // 1242;
-		GrayValue = new double[h1][w1];
-		BufferedImage gray = new BufferedImage(w1, h1, 1);// new image
-		int value,localmax=0;
+	public static double[][] getGrayScaleAvg(BufferedImage img, int level,int w1,int h1) {
+		double[][] GrayValue = new double[h1][w1];
+		int value,localmax=0,max=0;
 		Raster origRaster = img.getData();
 		for (int i = 0; i < w1; i++) {
 			for (int j = 0; j < h1; j++) {
@@ -163,7 +168,6 @@ public class Glcm extends ViewportTool{
 				if (value > max) {
 					max = value;
 				}
-				gray.setRGB(i, j, value);
 			}
 		}
 		for(int g=0;g<20;g++){
@@ -179,7 +183,7 @@ public class Glcm extends ViewportTool{
 				}
 			}
 		}
-		return gray;
+		return GrayValue;
 	}
 
 	/*public void mouseMoved(ViewportCluster vpc, Viewport vp, MouseEvent e) {
@@ -231,10 +235,11 @@ public class Glcm extends ViewportTool{
 
 	// GLCMºâªk!
 	//new
-	public static double[][] ComputeGlcm(int Co_size, BufferedImage Greyimg, int angle, double[][] mask) {
+	public static double[][] ComputeGlcm(int Co_size, double[][] GrayValue, int angle, double[][] mask, int h1, int w1,int imagenum) {
 		double[][] comatrix = new double[Co_size][Co_size];
 		double[][] cpGray = GrayValue;
 		int xoffset=0,yoffset=0;
+		double[][][] Values = new double[2][4][6];
 		int total = ArraySize*ArraySize;
 		StringBuffer OutsASM = new StringBuffer();
 		StringBuffer OutsCon = new StringBuffer(); 
@@ -304,22 +309,22 @@ public class Glcm extends ViewportTool{
 						}
 					}
 		    		try {
-						fw = new FileWriter("C:/Users/cebleclipse/Desktop/GLCM_point/TestSpeedASM_GLCM_"+angle+".txt ", true);
+						fw = new FileWriter("../../GLCM_point/Image"+imagenum+"/ASM_GLCM_"+angle+".txt ", true);
 						bw = new BufferedWriter(fw);
 						bw.write(OutsASM.toString());
 						bw.newLine();
-						/*fw1 = new FileWriter("C:/Users/cebleclipse/Desktop/GLCM_point/TestCon_GLCM_"+angle+".txt ", true);
+						fw1 = new FileWriter("../../GLCM_point/Image"+imagenum+"/Con_GLCM_"+angle+".txt ", true);
 						bw1 = new BufferedWriter(fw1);
 						bw1.write(OutsCon.toString());
 						bw1.newLine();		
-						fw2 = new FileWriter("C:/Users/cebleclipse/Desktop/GLCM_point/TestDis_GLCM_"+angle+".txt ", true);
+						fw2 = new FileWriter("../../GLCM_point/Image"+imagenum+"/Dis_GLCM_"+angle+".txt ", true);
 						bw2 = new BufferedWriter(fw2);
 						bw2.write(OutsDis.toString());
 						bw2.newLine();	
-						fw3 = new FileWriter("C:/Users/cebleclipse/Desktop/GLCM_point/TestCor_GLCM_"+angle+".txt ", true);
+						fw3 = new FileWriter("../../GLCM_point/Image"+imagenum+"/Cor_GLCM_"+angle+".txt ", true);
 						bw3 = new BufferedWriter(fw3);
 						bw3.write(OutsCOR.toString());
-						bw3.newLine();	*/
+						bw3.newLine();	
 						//System.out.println("In");
 					} catch (IOException e) {
 						// TODO Auto-generated catch block
@@ -331,9 +336,9 @@ public class Glcm extends ViewportTool{
 					OutsDis.delete(0, OutsDis.length());
 					try {
 						bw.close();
-						/*bw1.close();
+						bw1.close();
 						bw2.close();
-						bw3.close();*/
+						bw3.close();
 					} catch (IOException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -456,7 +461,7 @@ public class Glcm extends ViewportTool{
 		return con;
 	}
 
-	private static double ENT(double[][] comatrix, int total) {
+	/*private static double ENT(double[][] comatrix, int total) {
 		double ent = 0,temp = 0;
 		for (int i = 0; i < comatrix.length; i++) {
 			for (int j = 0; j < comatrix[0].length; j++) {
@@ -477,7 +482,7 @@ public class Glcm extends ViewportTool{
 			}
 		}
 		return hom;
-	}
+	}*/
 
 	private static double DIS(double[][] comatrix, int total) {
 		double dis = 0,temp = 0;

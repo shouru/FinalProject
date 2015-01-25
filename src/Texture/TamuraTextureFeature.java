@@ -28,13 +28,14 @@ import org.medtoolbox.jviewbox.viewport.ViewportTool;
 import LevelSet.SkullStripper;
 
 public class TamuraTextureFeature extends ViewportTool{
-	public static File img;
+	/*public static File img;
 	private static double[][] GrayValue;
 	private static BufferedImage origimage;
 	private static int ybegin,xbegin,xend,yend;
 	private static int ROItotal;
 	private static int height, width;
 	private static int ArraySize;
+	private static int Imagenum;*/
 	/**
 	 * Vector matrix
 	 */
@@ -52,6 +53,11 @@ public class TamuraTextureFeature extends ViewportTool{
 	
 	public TamuraTextureFeature(double[][] phi, BufferedImage orig, int _xbegin,int _ybegin,int xen, int yen,int roi,int imagenum,int arraysize){
 		super("TamuraTextureFeature", "TamuraTextureFeature of Image", "", "");
+		BufferedImage origimage;
+		int ybegin,xbegin,xend,yend;
+		int ROItotal;
+		int ArraySize;
+		int Imagenum;
 		origimage = orig;
 		xbegin = _xbegin;
 		xend = xen;
@@ -59,10 +65,14 @@ public class TamuraTextureFeature extends ViewportTool{
 		yend = yen;
 		mask = phi;
 		ROItotal = roi;
+		Imagenum = imagenum;
 		double cor,cont,dir=0;
 		ArraySize = arraysize;
+        int width = orig.getWidth();  //1200
+        int height = orig.getHeight(); //1242;
+        double[][] GrayValue = new double[height][width];
 		//transform level to 256
-		getGrayScaleAvg(origimage,256);
+		getGrayScaleAvg(origimage,32,height,width,GrayValue);
 		for(int i = 1;i<2;i++){ //about out or in
 			/*if(i==0)
 				System.out.println("===================Outside==================");
@@ -71,9 +81,9 @@ public class TamuraTextureFeature extends ViewportTool{
 			System.out.println("Cor is "+Cor(i));
 			System.out.println("Contrast is "+Contrast(i)); */
 			//System.out.println("Dir is "+Dir(16,12,i));
-			//cor = Cor(i);
-			//cont = Contrast(i);
-			dir = Dir(16,2,i);
+			cor = Cor(i,height,width,GrayValue,arraysize,imagenum);
+			cont = Contrast(i,arraysize,height,width,GrayValue,imagenum);
+			//dir = Dir(16,2,i);
 			/*try{
 		    	WritableWorkbook workbook = null;
 		    	if(i==1)
@@ -152,10 +162,10 @@ public class TamuraTextureFeature extends ViewportTool{
 		System.out.println("Contrast is "+Contrast());
 		System.out.println("Dir is "+Dir(16,12,0.2));
 	}*/
-	public static void getGrayScaleAvg(BufferedImage img,int level) {
-        width = img.getWidth();  //1200
-        height = img.getHeight(); //1242;
-        GrayValue = new double[height][width];
+	public static void getGrayScaleAvg(BufferedImage img,int level,int height,int width,double[][] GrayValue) {
+        /*int width = img.getWidth();  //1200
+        int height = img.getHeight(); //1242;*/
+        //double[][] GrayValue = new double[height][width];
         int max =0, localmax = -1;
         BufferedImage gray = new BufferedImage(width, height, 1);// new image
         int value;
@@ -185,7 +195,7 @@ public class TamuraTextureFeature extends ViewportTool{
     /**
      * 有需要增加的參數~~~
      */
-    public static double Cor(int inside){
+    public static double Cor(int inside,int height,int width,double[][] GrayValue,int ArraySize,int Imagenum){
     	double maxV = 0;
     	double cor = 0;
     	double [][][] A = new double[6][height][width];
@@ -274,7 +284,7 @@ public class TamuraTextureFeature extends ViewportTool{
 								Arrays.fill(A[k][m],0);
 				}
 				try {
-					fw = new FileWriter("C:/Users/cebleclipse/Desktop/TestCor.txt ", true);
+					fw = new FileWriter("../../Tamura_point/Image"+Imagenum+"/Coarseness.txt ", true);
 					bw = new BufferedWriter(fw);
 					bw.write(outs.toString());
 					bw.newLine();
@@ -349,7 +359,7 @@ public class TamuraTextureFeature extends ViewportTool{
     	return cor/denominator;
     }
     
-    public static double Contrast(int inside){
+    public static double Contrast(int inside,int ArraySize,int height,int width,double[][] GrayValue,int Imagenum){
     	double Fcos=0;
     	double mean = 0;
     	double variance = 0; 
@@ -407,7 +417,7 @@ public class TamuraTextureFeature extends ViewportTool{
 					mean = 0;
     			}
     			try {
-					fw = new FileWriter("C:/Users/cebleclipse/Desktop/TestContrast.txt ", true);
+					fw = new FileWriter("../../Tamura_point/Image"+Imagenum+"/Contrast.txt ", true);
 					bw = new BufferedWriter(fw);
 					bw.write(outs.toString());
 					bw.newLine();
@@ -462,7 +472,7 @@ public class TamuraTextureFeature extends ViewportTool{
     }
     
     //a lot of code need to be fixed
-    private static double Dir(int d, int t, int inside){
+    /*private static double Dir(int d, int t, int inside){
     	double Fdir=0;
     	double[][] Hmatrix = new double[][]{{-1,0,1},{-1,0,1},{-1,0,1}};
     	double[][] Vmatrix = new double[][]{{1,1,1},{0,0,0},{-1,-1,-1}};
@@ -522,7 +532,7 @@ public class TamuraTextureFeature extends ViewportTool{
 					 * accmulator++; } }
 					 */
 					// System.out.println("accmulator is "+ accmulator);
-					Ntheta[k] = accmulator;
+					/*Ntheta[k] = accmulator;
 					sum_N_theta += accmulator;
 				}
 				// compute number of peak and construct EdgeProbaHisto
@@ -571,7 +581,7 @@ public class TamuraTextureFeature extends ViewportTool{
     	//make a recursive class for compute the lol minus
     	Values[2] = Fdir;
 		return Fdir;
-    }
+    }*/
     
     private static double thominus(double[] EdgeProbaHisto,int d,int maxposi){
     	double result = 0;

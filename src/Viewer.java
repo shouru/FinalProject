@@ -61,7 +61,8 @@ import tools.WriteDataTool;
  * reads images from the file names provided on the command line as arguments
  * and displays them.
  */
-public class Viewer extends JFrame
+//public class Viewer extends JFrame
+public class Viewer
 {
 	/**
 	 * Storing the input images from the original data.
@@ -92,12 +93,12 @@ public class Viewer extends JFrame
 	/** 
 	 * Input image width. 
 	 */
-	private int _width;
+	private static int _width;
 	
 	/** 
 	 * Input image height. 
 	 */
-    private int _height;
+    private static int _height;
     
     /** 
      * Integer parameters for the evolution process: index of power and index of filter.
@@ -123,7 +124,9 @@ public class Viewer extends JFrame
     private Vector _skullstripper = new Vector(1,1); 
     
     private static int ArraySize = 0;
-    
+	private static File file;
+
+	private static File file2 = null;
     /**
      * Constructs a viewer to display the input images with the specified file.
      * @param	file		a file representing the input image.
@@ -131,11 +134,18 @@ public class Viewer extends JFrame
      */
     public Viewer(File file, File file2) throws IOException
     {
-		super("LevelSet for brain image segmentation");
-		
+		//super("LevelSet for brain image segmentation");
+		Thread t1 = new Thread(new Run(file,file2,3,16));
+		Thread t2 = new Thread(new Run(file,file2,17,30));
+		Thread t3 = new Thread(new Run(file,file2,31,44));
+		Thread t4 = new Thread(new Run(file,file2,45,52));
+		t1.start();
+		t2.start();
+		t3.start();
+		t4.start();
 		// Create the GUI showing the images and toolbars.
-		WriteData(file,file2,1);
-		_setGUI(file);	
+		//WriteData(file,file2,1);
+		//_setGUI(file);	
 	 }
 
 
@@ -146,7 +156,6 @@ public class Viewer extends JFrame
      */
     public static void main(String[] args) throws IOException 
 	{
-		File file,file2 = null;
 		// If there is no command-line arguments, pop up a JFileChooser and
 		// let the user choose image file to load
 		if (args.length == 0) {
@@ -170,12 +179,12 @@ public class Viewer extends JFrame
 		Scanner in = new Scanner(System.in);
 		System.out.println("請輸入map size：");
 		ArraySize = in.nextInt();
-		
+		//WriteData(file,file2,3,52);
 		// Create a Viewer and make it visible
 		Viewer viewer = new Viewer(file,file2);
-		viewer.setDefaultCloseOperation(EXIT_ON_CLOSE);
+		/*viewer.setDefaultCloseOperation(EXIT_ON_CLOSE);
 		viewer.setSize(800, 600);
-		viewer.setVisible(true);
+		viewer.setVisible(true);*/
     }
     /**
     *Reads the image file using FileReader.java.
@@ -271,15 +280,34 @@ public class Viewer extends JFrame
 		
 	
 	}
-  
+	private class Run implements Runnable{
+		private File file,file2;
+		private int start,end;
+		public Run(File file,File file2,int start,int end){
+			this.file = file;
+			this.file2 = file2;
+			this.start = start;
+			this.end = end;
+		}
+		@Override
+		public void run() {
+			// TODO Auto-generated method stub
+			try {
+				WriteData(file,file2,start,end);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
 	
 	/**
 	 * write to excel
 	 * @throws IOException 
 	 */
-	private void WriteData(File file, File file2,int imagenumber) throws IOException{
+	private static void  WriteData(File file, File file2,int imagenumber,int endnumber) throws IOException{
 		if (file.isFile() && file.getName().endsWith(".png")){
-			if(imagenumber>32 && imagenumber < 34){
+			if(imagenumber>2 && imagenumber < 53){
 			String Path = file.getAbsolutePath();
 			String Path2 = file2.getAbsolutePath();
 			Path.replaceAll("\\\\", "/");
@@ -314,16 +342,18 @@ public class Viewer extends JFrame
 				}
 			}
 			RunLengthMat run = new RunLengthMat(data,origImage,xbegin,ybegin,xend,yend,roitotal,imagenumber,ArraySize);
-			//TamuraTextureFeature run3 = new TamuraTextureFeature(data,origImage,xbegin,ybegin,xend,yend,roitotal,imagenumber,ArraySize);
-			//Glcm run2 = new Glcm(data,origImage,xbegin,ybegin,xend,yend,imagenumber,ArraySize);
+			TamuraTextureFeature run3 = new TamuraTextureFeature(data,origImage,xbegin,ybegin,xend,yend,roitotal,imagenumber,ArraySize);
+			Glcm run2 = new Glcm(data,origImage,xbegin,ybegin,xend,yend,imagenumber,ArraySize);
 			}
 			}
 			else if(file.isDirectory()){
 				File[] contents = file.listFiles();
 				File[] contents2 = file2.listFiles();
-				for (int i = 0; i < contents.length; i++) {
+				Arrays.sort(contents);
+				Arrays.sort(contents2);
+				for (int i = imagenumber; i <= endnumber; i++) {
 					//檢查圖片編號是否從0開始
-					WriteData(contents[i], contents2[i],i+1);
+					WriteData(contents[i-1], contents2[i-1],i,endnumber);
 			    }
 			}
 		System.out.println("==========Done==========");
@@ -333,7 +363,7 @@ public class Viewer extends JFrame
 	 * Adds tools to the toolbar.
 	 * @param	file	the input file to be referred for some tools.
 	 */
-	private void _addToolBar(File file)
+	/*private void _addToolBar(File file)
 	{
 		_toolBar = new ViewportToolBar();
 		// Add tools.
@@ -346,7 +376,7 @@ public class Viewer extends JFrame
 	    _toolBar.addTool(new LevelSetTool(_skullstripper), "LevelSet");
 	
 	
-	}
+	}*/
 
 
 	/**
@@ -355,7 +385,7 @@ public class Viewer extends JFrame
 	 * @param	file	the input file to be referred.
 	 * @throws IOException 
 	 */
-	private void _setGUI(File file) throws IOException
+	/*private void _setGUI(File file) throws IOException
 	{
 		/*if (file == null) {
 			return;
@@ -374,7 +404,7 @@ public class Viewer extends JFrame
 		//_addToolBar(file);
 		
 		// Create a ViewportGrid to display the images.
-		_grid = new ViewportGrid(_allImages);
+		//_grid = new ViewportGrid(_allImages);
 		//_grid.setGrid(1,1);
 		
 		
@@ -420,7 +450,7 @@ public class Viewer extends JFrame
            SkullStripper slice = (SkullStripper)_skullstripper.elementAt(i);
            //System.out.print("height="+_height +"in veiwer slice = "+slice.slice);
            slice.initialization(image.getBufferedImage());
-        }*/
+        //}
 		//}
 		//else if(file.isDirectory())
 		// Link the ToolBar to the ViewportGrid
@@ -434,5 +464,5 @@ public class Viewer extends JFrame
 		getContentPane().add(_grid, BorderLayout.CENTER);
 		getContentPane().add(_jControlSet, BorderLayout.WEST);
 		getContentPane().add(new JLabel(file.toString()), BorderLayout.SOUTH);
-	}
+	}*/
 }

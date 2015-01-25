@@ -36,7 +36,7 @@ import LevelSet.SkullStripper;
 
 public class RunLengthMat extends ViewportTool{
 	
-	private static double[][] GrayValue;
+	/*private static double[][] GrayValue;
 	private static int[][] GLRmatrix,GLRPNmatrix,OGLRmatrix,OGLRPNmatrix;
 	private static int[] GLRNVector,RLRNVector,OGLRNVector,ORLRNVector;
 	private static BufferedImage origimage;
@@ -47,7 +47,8 @@ public class RunLengthMat extends ViewportTool{
 	private static int ROItotal = 0;
 	private static int imagenumber = 0;
 	static double[][][] Values = new double[2][4][11];
-	
+	*/
+	private byte[] lock = new byte[0]; // special value for synchronize
 	//test¥Î °O±o§R±¼
 	/*private static int[][] test = {{0,1,2,3},{1,1,2,3},{2,2,2,3},{3,3,3,3}};
 	private static int[][] isCheckT = new int[4][4];
@@ -261,6 +262,18 @@ public class RunLengthMat extends ViewportTool{
 
 	public RunLengthMat(double[][] phi, BufferedImage orig, int xbegin,int ybegin,int xen, int yen,int roitotal,int imagenum,int arraysize){
 		super("RunLengh", "RunLengthMat of Image", "", "");
+		double[][] GrayValue;
+		int[][] GLRmatrix,GLRPNmatrix,OGLRmatrix,OGLRPNmatrix;
+		int[] GLRNVector,RLRNVector,OGLRNVector,ORLRNVector;
+		BufferedImage origimage;
+		double Nr=0,ONr=0;
+		int w1,h1;
+		int[][] isCheck; int _xbegin, _ybegin;
+		int xend;
+		int yend;
+		int ROItotal = 0;
+		int imagenumber = 0;
+		double[][][] Values = new double[2][4][11];
 		long StartTime = System.currentTimeMillis();
 		mask = phi;
 		ROItotal = roitotal;
@@ -277,7 +290,7 @@ public class RunLengthMat extends ViewportTool{
 		int xdir = 0, ydir = 0;
 		int total = 0;
 		GrayValue = new double[h1][w1];
-		int value, max = 3, maxgray = 0,level = 256; //origin max =0, modify max = 3
+		int value, max = 3, maxgray = 0,level = 32; //origin max =0, modify max = 3
 		Raster origRaster = origimage.getData();
 		for (int i = 0; i < w1; i++) {
 			for (int j = 0; j < h1; j++) {
@@ -306,9 +319,10 @@ public class RunLengthMat extends ViewportTool{
 		//GLRPNmatrix = new int[max + 1][Math.max(yend-_ybegin,xend-_xbegin) + 2];
 		//GLRNVector = new int[max + 1];
 		//RLRNVector = new int[Math.max(yend-_ybegin,xend-_xbegin) + 2];
-		OGLRmatrix = new int[max + 1][ArraySize + 1];  //OGLRmatrix = new int[max + 1][Math.max(h1,w1) + 1];
-		OGLRPNmatrix = new int[max + 1][ArraySize + 1]; //OGLRPNmatrix = new int[max + 1][Math.max(h1,w1) + 1];
-		OGLRNVector = new int[max + 1];
+		
+		OGLRmatrix = new int[level + 1][ArraySize + 1];  //OGLRmatrix = new int[max + 1][Math.max(h1,w1) + 1];
+		OGLRPNmatrix = new int[level + 1][ArraySize + 1]; //OGLRPNmatrix = new int[max + 1][Math.max(h1,w1) + 1];
+		OGLRNVector = new int[level + 1];
 		ORLRNVector = new int[ArraySize + 1]; //ORLRNVector = new int[Math.max(h1,w1) + 1];
 		StringBuffer Lre = new StringBuffer();
 		StringBuffer Gln = new StringBuffer(); 
@@ -370,12 +384,12 @@ public class RunLengthMat extends ViewportTool{
 							for(int in = j - (ArraySize / 2); in <= j + (ArraySize / 2); in++){
 								if (im >= 0 && im < h1 && in >= 0 && in < w1) {
 									if (isCheck[im][in] == 0) {
-										length = Length(im, in, xdir, ydir, mask, 0);
+										length = Length(im, in, xdir, ydir, mask, 0,isCheck,_xbegin,_ybegin,yend,xend,GrayValue);
 										OGLRmatrix[(int) GrayValue[im][in]][length]++;
 									}
 								}
 							}
-							for (int k = 0; k <= max; k++) {
+							for (int k = 0; k <= level; k++) {
 								for (int l = 1; l <= ArraySize; l++) {
 									OGLRPNmatrix[k][l] = OGLRmatrix[k][l] * l;
 									total += OGLRmatrix[k][l];
@@ -384,17 +398,18 @@ public class RunLengthMat extends ViewportTool{
 								total = 0;
 							}
 							for (int l = 1; l <= ArraySize; l++) {
-								for (int k = 0; k <= max; k++)
+								for (int k = 0; k <= level; k++){
 									total += OGLRmatrix[k][l];
+								}
 								ORLRNVector[l] = total;
 								ONr += total;
 								total = 0;
 							}
-							lre = LRE(0);
-							gln = GLN(max, 0);
-							rln = RLN(0);
-							lrlge = LRLGE(0);
-							lrhge = LRHGE(0);
+							lre = LRE(0,ORLRNVector,ONr);
+							gln = GLN(level, 0,OGLRNVector,ONr);
+							rln = RLN(0,ORLRNVector,ONr);
+							lrlge = LRLGE(0,OGLRPNmatrix,ONr);
+							lrhge = LRHGE(0,OGLRmatrix,ONr);
 							Lre.append(lre);
 							Gln.append(gln);
 							Rln.append(rln);
@@ -424,23 +439,24 @@ public class RunLengthMat extends ViewportTool{
 							ONr=0;
 						}
 						try {
-							fw = new FileWriter("C:/Users/cebleclipse/Desktop/RunLength_point/Lre_RunL_"+dir+".txt ", true);
+							//fw = new FileWriter("C:/Users/cebleclipse/Desktop/RunLength_point/Image"+imagenumber+"/Lre_RunL_"+dir+".txt ", true);
+							fw = new FileWriter("../../RunLength_point/Image"+imagenumber+"/Lre_RunL_"+dir+".txt ", true);
 							bw = new BufferedWriter(fw);
 							bw.write(Lre.toString());
 							bw.newLine();
-							fw1 = new FileWriter("C:/Users/cebleclipse/Desktop/RunLength_point/Gln_RunL_"+dir+".txt ", true);
+							fw1 = new FileWriter("../../RunLength_point/Image"+imagenumber+"/Gln_RunL_"+dir+".txt ", true);
 							bw1 = new BufferedWriter(fw1);
 							bw1.write(Gln.toString());
 							bw1.newLine();		
-							fw2 = new FileWriter("C:/Users/cebleclipse/Desktop/RunLength_point/Rln_RunL_"+dir+".txt ", true);
+							fw2 = new FileWriter("../../RunLength_point/Image"+imagenumber+"/Rln_RunL_"+dir+".txt ", true);
 							bw2 = new BufferedWriter(fw2);
 							bw2.write(Rln.toString());
 							bw2.newLine();	
-							fw3 = new FileWriter("C:/Users/cebleclipse/Desktop/RunLength_point/Lrlge_RunL_"+dir+".txt ", true);
+							fw3 = new FileWriter("../../RunLength_point/Image"+imagenumber+"/Lrlge_RunL_"+dir+".txt ", true);
 							bw3 = new BufferedWriter(fw3);
 							bw3.write(Lrlge.toString());
 							bw3.newLine();	
-							fw4 = new FileWriter("C:/Users/cebleclipse/Desktop/RunLength_point/Lrhge_RunL_"+dir+".txt ", true);
+							fw4 = new FileWriter("../../RunLength_point/Image"+imagenumber+"/Lrhge_RunL_"+dir+".txt ", true);
 							bw4 = new BufferedWriter(fw4);
 							bw4.write(Lrhge.toString());
 							bw4.newLine();	
@@ -631,14 +647,14 @@ public class RunLengthMat extends ViewportTool{
 		}*/
 		System.out.println("Using Time:" + (System.currentTimeMillis() - StartTime) + " ms");
 	}
-	private static double LRHGE(int inside) {
+	private static double LRHGE(int inside,int[][] OGLRmatrix,double ONr) {
 		// TODO Auto-generated method stub
 		double lrhge = 0;
 		if(inside == 1){
-		for(int i = 1;i < GLRmatrix.length + 1;i++)
+		/*for(int i = 1;i < GLRmatrix.length + 1;i++)
 			for(int j =1; j < GLRmatrix[0].length;j++)
 				lrhge += Math.pow(i,2) * GLRmatrix[i - 1][j] * Math.pow(j,2);
-		lrhge = lrhge / Nr;
+		lrhge = lrhge / Nr;*/
 		}
 		else{
 			for(int i = 1;i < OGLRmatrix.length + 1;i++)
@@ -650,25 +666,25 @@ public class RunLengthMat extends ViewportTool{
 			//System.out.println("LRHGE is "+lrhge);
 			return lrhge;
 	}
-	private static double LRLGE(int inside) {
+	private static double LRLGE(int inside,int[][] OGLRPNmatrix, double ONr) {
 		// TODO Auto-generated method stub
 		double lrlge = 0;
 		if(inside==1){
-			for (int i = 1; i < GLRmatrix.length + 1; i++)
+			/*for (int i = 1; i < GLRmatrix.length + 1; i++)
 				for (int j = 1; j < GLRmatrix[0].length; j++)
 					lrlge += (Math.pow(j, 2) * GLRmatrix[i - 1][j]) / Math.pow(i, 2);
-			lrlge = lrlge / Nr;
+			lrlge = lrlge / Nr;*/
 		}
 		else{
-			for (int i = 1; i < OGLRmatrix.length + 1; i++)
-				for (int j = 1; j < OGLRmatrix[0].length; j++)
+			for (int i = 1; i < OGLRPNmatrix.length + 1; i++)
+				for (int j = 1; j < OGLRPNmatrix[0].length; j++)
 					lrlge += (Math.pow(j, 2) * OGLRPNmatrix[i - 1][j]) / Math.pow(i, 2);
 			lrlge = lrlge / ONr;
 		}
 			//System.out.println("LRLGE is "+lrlge);
 			return lrlge;
 	}
-	private static double SRHGE(int inside) {
+	/*private static double SRHGE(int inside,double[][] OGLRmatrix,double ONr) {
 		// TODO Auto-generated method stub
 		double srhge=0;
 		if (inside == 1) {
@@ -684,8 +700,8 @@ public class RunLengthMat extends ViewportTool{
 		}
 		//System.out.println("SRHGE is "+srhge);
 		return srhge;
-	}
-	private static double SRLGE(int inside) {
+	}*/
+	/*private static double SRLGE(int inside,double[][] OGLRPNmatrix, double ONr) {
 		// TODO Auto-generated method stub
 		double srlge = 0;
 		if (inside == 1) {
@@ -694,31 +710,31 @@ public class RunLengthMat extends ViewportTool{
 					srlge += GLRPNmatrix[i - 1][j] / (Math.pow(i, 2) * Math.pow(j, 2));
 			srlge = srlge / Nr;
 		} else {
-			for (int i = 1; i < OGLRmatrix.length + 1; i++)
-				for (int j = 1; j < OGLRmatrix[0].length; j++)
+			for (int i = 1; i < OGLRPNmatrix.length + 1; i++)
+				for (int j = 1; j < OGLRPNmatrix[0].length; j++)
 					srlge += OGLRPNmatrix[i - 1][j] / (Math.pow(i, 2) * Math.pow(j, 2));
 			srlge = srlge / ONr;
 		}
 		//System.out.println("SRLGE is "+srlge);
 		return srlge;
-	}
-	private static double HGRE(int max,int inside) {
+	}*/
+	/*private static double HGRE(int level,int inside, double[] OGLRNVector,double ONr) {
 		// TODO Auto-generated method stub
 		double hgre = 0;
 		if (inside == 1) {
-			for (int i = 1; i <= max + 1; i++) {
+			for (int i = 1; i <= level + 1; i++) {
 				hgre += GLRNVector[i - 1] * Math.pow(i, 2);
 			}
 			hgre = hgre / Nr;
 		} else {
-			for (int i = 1; i <= max + 1; i++) {
+			for (int i = 1; i <= level + 1; i++) {
 				hgre += OGLRNVector[i - 1] * Math.pow(i, 2);
 			}
 			hgre = hgre / ONr;
 		}
 		return hgre;
-	}
-	private static double LGRE(int max,int inside) {
+	}*/
+/*	private static double LGRE(int max,int inside) {
 		// TODO Auto-generated method stub
 		double lgre = 0;
 		if (inside == 1) {
@@ -734,8 +750,8 @@ public class RunLengthMat extends ViewportTool{
 		}
 		//System.out.println("LGRE is "+lgre);
 		return lgre;
-	}
-	private static double RP(int inside, int roitotal) {
+	}*/
+	/*private static double RP(int inside, int roitotal) {
 		// TODO Auto-generated method stub
 		double nr = 0;
 		if(inside==1)
@@ -746,15 +762,15 @@ public class RunLengthMat extends ViewportTool{
 		}
 		//System.out.println("RP is "+ nr);
 		return nr;
-	}
-	private static double RLN(int inside) {
+	}*/
+	private static double RLN(int inside,int[] ORLRNVector,double ONr) {
 		// TODO Auto-generated method stub
 		double rln = 0;
 		if (inside == 1) {
-			for (int i = 1; i < RLRNVector.length; i++) {
+			/*for (int i = 1; i < RLRNVector.length; i++) {
 				rln += Math.pow(RLRNVector[i], 2);
 			}
-			rln = rln / Nr;
+			rln = rln / Nr;*/
 		} else {
 			for (int i = 1; i < ORLRNVector.length; i++) {
 				rln += Math.pow(ORLRNVector[i], 2);
@@ -764,13 +780,13 @@ public class RunLengthMat extends ViewportTool{
 		//System.out.println("RLN of is "+rln);
 		return rln;
 	}
-	private static double GLN(int max,int inside) {
+	private static double GLN(int max,int inside, int[] OGLRNVector,double ONr) {
 		// TODO Auto-generated method stub
 		double gln = 0;
 		if (inside == 1) {
-			for (int i = 0; i <= max; i++)
+			/*for (int i = 0; i <= max; i++)
 				gln += Math.pow(GLRNVector[i], 2);
-			gln = gln / Nr;
+			gln = gln / Nr;*/
 		} else {
 			for (int i = 0; i <= max; i++)
 				gln += Math.pow(OGLRNVector[i], 2);
@@ -779,14 +795,14 @@ public class RunLengthMat extends ViewportTool{
 		//System.out.println("GLN is "+gln);
 		return gln;
 	}
-	private static double LRE(int inside) {
+	private static double LRE(int inside, int[] ORLRNVector,double ONr) {
 		// TODO Auto-generated method stub
 		double lre=0;
 		if (inside == 1) {
-			for (int i = 1; i < RLRNVector.length; i++) {
+			/*for (int i = 1; i < RLRNVector.length; i++) {
 				lre += RLRNVector[i] * Math.pow(i, 2);
 			}
-			lre = lre / Nr;
+			lre = lre / Nr;*/
 		} else {
 			for (int i = 1; i < ORLRNVector.length; i++) {
 				lre += ORLRNVector[i] * Math.pow(i, 2);
@@ -796,7 +812,7 @@ public class RunLengthMat extends ViewportTool{
 		//System.out.println("LRE is "+lre);
 		return lre;
 	}
-	private static double SRE(int inside) {
+	/*private static double SRE(int inside, double[] ORLRNVector, double ONr) {
 		// TODO Auto-generated method stub
 		double sre=0,temp = 0;
 		if (inside == 1) {
@@ -812,8 +828,8 @@ public class RunLengthMat extends ViewportTool{
 		}
 		//System.out.println("SRE is "+sre);
 		return sre;
-	}
-	private static int Length(int i, int j, int xdir, int ydir,double[][] mask,int inside) {
+	}*/
+	private static int Length(int i, int j, int xdir, int ydir,double[][] mask,int inside,int[][] isCheck,int _xbegin,int _ybegin,int yend, int xend,double[][] GrayValue) {
 		// TODO Auto-generated method stub
 		//recursive to count the length , not sure whether this costs much time or not 
 		int leng = 1;
@@ -823,15 +839,15 @@ public class RunLengthMat extends ViewportTool{
 				leng+=Length(i + ydir, j + xdir, xdir, ydir, mask, inside);*/
 		isCheck[i][j] = 1;
 		if(inside == 1){
-			if (i + ydir >= _ybegin && j + xdir >= _xbegin && i + ydir <= yend && j + xdir <= xend )
+			/*if (i + ydir >= _ybegin && j + xdir >= _xbegin && i + ydir <= yend && j + xdir <= xend )
 				if (GrayValue[i][j] == GrayValue[i + ydir][j + xdir] && mask[i + ydir][j + xdir] == 1) {
 					leng += Length(i + ydir, j + xdir, xdir, ydir, mask, inside);
-				}
+				}*/
 		}
 		else{
-			if (i + ydir >= 0 && j + xdir >= 0 && i + ydir < h1 && j + xdir < w1 && i + ydir>= _ybegin && j + xdir >= _xbegin && i + ydir <= yend && j + xdir <= xend)
+			if (i + ydir >= 0 && j + xdir >= 0 && i + ydir < GrayValue.length && j + xdir < GrayValue[0].length && i + ydir>= _ybegin && j + xdir >= _xbegin && i + ydir <= yend && j + xdir <= xend)
 				if (GrayValue[i][j] == GrayValue[i + ydir][j + xdir] ) {  //delete±¼ mask[i + ydir][j + xdir] == 0
-					leng += Length(i + ydir, j + xdir, xdir, ydir, mask, inside);
+					leng += Length(i + ydir, j + xdir, xdir, ydir, mask, inside,isCheck,_xbegin,_ybegin,yend,xend,GrayValue);
 				}
 		}
 		return leng;
