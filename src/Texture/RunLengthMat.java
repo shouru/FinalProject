@@ -42,13 +42,12 @@ public class RunLengthMat extends ViewportTool{
 	private static BufferedImage origimage;
 	private static double Nr=0,ONr=0;
 	private static int w1,h1;
-	private static int[][] isCheck;
 	private static int _xbegin, _ybegin, xend,yend;
 	private static int ROItotal = 0;
 	private static int imagenumber = 0;
 	static double[][][] Values = new double[2][4][11];
 	*/
-	private byte[] lock = new byte[0]; // special value for synchronize
+	private static int[][] isCheck;
 	//test用 記得刪掉
 	/*private static int[][] test = {{0,1,2,3},{1,1,2,3},{2,2,2,3},{3,3,3,3}};
 	private static int[][] isCheckT = new int[4][4];
@@ -57,17 +56,17 @@ public class RunLengthMat extends ViewportTool{
 	/**
 	 * Cursor point.
 	 */
-	private Point _cursorPoint = new Point();
+	//private Point _cursorPoint = new Point();
 	
 	/**
 	 * Vector matrix
 	 */
-	private Vector _Matrix;
+	//private Vector _Matrix;
 	
 	/**
 	 * Annotation dynamic shape.
 	 */
-	private DynamicAnnotationShape _dyShape;
+	//private DynamicAnnotationShape _dyShape;
 	
 	/**
 	 * Computation function.
@@ -77,7 +76,7 @@ public class RunLengthMat extends ViewportTool{
 	/**
 	 * Geometry contour for the inital placement.
 	 */
-	private GeometryContour _geometryContour;
+	//private GeometryContour _geometryContour;
 	/**
 	 * @mask = phi
 	 */
@@ -268,7 +267,7 @@ public class RunLengthMat extends ViewportTool{
 		BufferedImage origimage;
 		double Nr=0,ONr=0;
 		int w1,h1;
-		int[][] isCheck; int _xbegin, _ybegin;
+		int _xbegin, _ybegin;
 		int xend;
 		int yend;
 		int ROItotal = 0;
@@ -286,11 +285,11 @@ public class RunLengthMat extends ViewportTool{
 		w1 = origimage.getWidth();  //1200
 	    h1 = origimage.getHeight(); //1242;
 	    ArraySize = arraysize;
-		isCheck = new int[h1][w1];
+		isCheck = new int[ArraySize][ArraySize];
 		int xdir = 0, ydir = 0;
 		int total = 0;
 		GrayValue = new double[h1][w1];
-		int value, max = 3, maxgray = 0,level = 32; //origin max =0, modify max = 3
+		int value, max = 3, maxgray = 0,level = 256; //origin max =0, modify max = 3
 		Raster origRaster = origimage.getData();
 		for (int i = 0; i < w1; i++) {
 			for (int j = 0; j < h1; j++) {
@@ -359,7 +358,7 @@ public class RunLengthMat extends ViewportTool{
 				break;
 			}
 			//outside的GLRmatrix那些的要額外定義了 outside的function也要重做
-			int length;
+			int length = 0;
 			
 			/**
 			 * 此處_xBegin _yBegin xend yend mask
@@ -383,8 +382,10 @@ public class RunLengthMat extends ViewportTool{
 						for (int im = i - (ArraySize / 2); im <= i+(ArraySize / 2);im++)
 							for(int in = j - (ArraySize / 2); in <= j + (ArraySize / 2); in++){
 								if (im >= 0 && im < h1 && in >= 0 && in < w1) {
-									if (isCheck[im][in] == 0) {
-										length = Length(im, in, xdir, ydir, mask, 0,isCheck,_xbegin,_ybegin,yend,xend,GrayValue);
+									if(isCheck[yend - im][xend - in]==0){
+										length = Length(im, in, xdir, ydir, mask, 0,_xbegin,_ybegin,yend,xend,GrayValue);
+										length += Length(im, in, -xdir, -ydir, mask, 0,_xbegin,_ybegin,yend,xend,GrayValue);
+										length--;
 										OGLRmatrix[(int) GrayValue[im][in]][length]++;
 									}
 								}
@@ -829,15 +830,15 @@ public class RunLengthMat extends ViewportTool{
 		//System.out.println("SRE is "+sre);
 		return sre;
 	}*/
-	private static int Length(int i, int j, int xdir, int ydir,double[][] mask,int inside,int[][] isCheck,int _xbegin,int _ybegin,int yend, int xend,double[][] GrayValue) {
+	private static int Length(int i, int j, int xdir, int ydir,double[][] mask,int inside,int _xbegin,int _ybegin,int yend, int xend,double[][] GrayValue) {
 		// TODO Auto-generated method stub
-		//recursive to count the length , not sure whether this costs much time or not 
+		//recursive to count the length , 
 		int leng = 1;
 		/*isCheckT[i][j]=1;
 		if (i + ydir >= 0 && j + xdir >= 0 && i + ydir < test.length && j + xdir < test[0].length && isCheckT[i+ydir][j+xdir]==0)
 			if(test[i][j]==test[i+ydir][j+xdir])
 				leng+=Length(i + ydir, j + xdir, xdir, ydir, mask, inside);*/
-		isCheck[i][j] = 1;
+		isCheck[yend - i][xend - j] = 1;
 		if(inside == 1){
 			/*if (i + ydir >= _ybegin && j + xdir >= _xbegin && i + ydir <= yend && j + xdir <= xend )
 				if (GrayValue[i][j] == GrayValue[i + ydir][j + xdir] && mask[i + ydir][j + xdir] == 1) {
@@ -846,8 +847,8 @@ public class RunLengthMat extends ViewportTool{
 		}
 		else{
 			if (i + ydir >= 0 && j + xdir >= 0 && i + ydir < GrayValue.length && j + xdir < GrayValue[0].length && i + ydir>= _ybegin && j + xdir >= _xbegin && i + ydir <= yend && j + xdir <= xend)
-				if (GrayValue[i][j] == GrayValue[i + ydir][j + xdir] ) {  //delete掉 mask[i + ydir][j + xdir] == 0
-					leng += Length(i + ydir, j + xdir, xdir, ydir, mask, inside,isCheck,_xbegin,_ybegin,yend,xend,GrayValue);
+				if (GrayValue[i][j] == GrayValue[i + ydir][j + xdir] && isCheck[yend - (i + ydir)][xend - (j + xdir)] == 0) {  //delete掉 mask[i + ydir][j + xdir] == 0
+					leng += Length(i + ydir, j + xdir, xdir, ydir, mask, inside,_xbegin,_ybegin,yend,xend,GrayValue);
 				}
 		}
 		return leng;

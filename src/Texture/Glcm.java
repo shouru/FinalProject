@@ -146,11 +146,11 @@ public class Glcm extends ViewportTool{
 		mask = phi;
 		//imagenum = imagenumber;
 		ArraySize = arraysize;
-		GrayValue = getGrayScaleAvg(origimage, 32,w1,h1);
+		GrayValue = getGrayScaleAvg(origimage, 128,w1,h1);
 		for(int i =0;i<4;i++){
 			System.out.println("=========================================================================");
 			angle = i*45;
-			cpGray[i] = ComputeGlcm(32,GrayValue,angle,mask,h1,w1,imagenumber);
+			cpGray[i] = ComputeGlcm(128,GrayValue,angle,mask,h1,w1,imagenumber);
 			System.out.println();
 		}
 		// compute GLCM method

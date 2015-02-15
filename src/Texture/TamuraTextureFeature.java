@@ -39,7 +39,7 @@ public class TamuraTextureFeature extends ViewportTool{
 	/**
 	 * Vector matrix
 	 */
-	private Vector _Matrix;
+	//private Vector _Matrix;
 	
 	/**
 	 * record coarseness contrast direction
@@ -72,7 +72,7 @@ public class TamuraTextureFeature extends ViewportTool{
         int height = orig.getHeight(); //1242;
         double[][] GrayValue = new double[height][width];
 		//transform level to 256
-		getGrayScaleAvg(origimage,32,height,width,GrayValue);
+		getGrayScaleAvg(origimage,128,height,width,GrayValue);
 		for(int i = 1;i<2;i++){ //about out or in
 			/*if(i==0)
 				System.out.println("===================Outside==================");

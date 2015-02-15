@@ -135,16 +135,16 @@ public class Viewer
     public Viewer(File file, File file2) throws IOException
     {
 		//super("LevelSet for brain image segmentation");
-		Thread t1 = new Thread(new Run(file,file2,3,16));
+		/*Thread t1 = new Thread(new Run(file,file2,3,16));
 		Thread t2 = new Thread(new Run(file,file2,17,30));
 		Thread t3 = new Thread(new Run(file,file2,31,44));
 		Thread t4 = new Thread(new Run(file,file2,45,52));
 		t1.start();
 		t2.start();
 		t3.start();
-		t4.start();
+		t4.start();*/
 		// Create the GUI showing the images and toolbars.
-		//WriteData(file,file2,1);
+		WriteData(file,file2,3,52);
 		//_setGUI(file);	
 	 }
 
@@ -342,8 +342,8 @@ public class Viewer
 				}
 			}
 			RunLengthMat run = new RunLengthMat(data,origImage,xbegin,ybegin,xend,yend,roitotal,imagenumber,ArraySize);
-			TamuraTextureFeature run3 = new TamuraTextureFeature(data,origImage,xbegin,ybegin,xend,yend,roitotal,imagenumber,ArraySize);
-			Glcm run2 = new Glcm(data,origImage,xbegin,ybegin,xend,yend,imagenumber,ArraySize);
+			//TamuraTextureFeature run3 = new TamuraTextureFeature(data,origImage,xbegin,ybegin,xend,yend,roitotal,imagenumber,ArraySize);
+			//7Glcm run2 = new Glcm(data,origImage,xbegin,ybegin,xend,yend,imagenumber,ArraySize);
 			}
 			}
 			else if(file.isDirectory()){
@@ -352,8 +352,10 @@ public class Viewer
 				Arrays.sort(contents);
 				Arrays.sort(contents2);
 				for (int i = imagenumber; i <= endnumber; i++) {
+				//	for (int i = 0; i <= contents.length; i++) {
 					//檢查圖片編號是否從0開始
 					WriteData(contents[i-1], contents2[i-1],i,endnumber);
+					//WriteData(contents[i], contents2[i],i+1);
 			    }
 			}
 		System.out.println("==========Done==========");

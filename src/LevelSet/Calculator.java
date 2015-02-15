@@ -138,7 +138,7 @@ public class Calculator
   }
 
   /**
-   * Calculate delta_epsilon.
+   * Calculate delta_epsilon. 寬貸演算法
    * 
    * @param phi A double array. 
    * @return A double array of delta_eps.
@@ -438,7 +438,7 @@ public class Calculator
 */
   /**
   *
-  * Auto Set velocity 
+  * Auto Set velocity 自動化權重參數
   *
   *
   */
@@ -618,7 +618,7 @@ public class Calculator
 
   /**
    * Calculate the direction of the normal of phi(x, y), which is 
-   * phi_y / phi_x.
+   * phi_y / phi_x.   dirction N;                                                                                                                          
    *
    * @return A two element array in the order of normal_x and normal_y.
    */
